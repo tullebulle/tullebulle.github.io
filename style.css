@@ -192,6 +192,15 @@ h2 {
   color: #a0a8b0;
 }
 
+.list-item .location {
+  display: inline-block;
+  width: 4em;
+  color: #a0a8b0;
+  font-size: 0.9em;
+  margin-left: 0.5em;
+  margin-right: 1em;
+}
+
 /**************************************************/
 /* Gallery of 3 preview videos. */
 
@@ -257,14 +266,16 @@ h2 {
   margin-top: 0.4em;
   border-radius: 5px;
   width: 100%;
-  height: 100%;
+  height: 135px;
+  object-fit: contain;
 }
 
 .thumbnail video {
   margin-top: 0.4em;
   border-radius: 5px;
   width: 100%;
-  height: 100%;
+  height: 135px;
+  object-fit: contain;
 }
 
 h3 {
