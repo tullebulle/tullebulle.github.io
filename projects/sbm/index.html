@@ -321,7 +321,7 @@ sample:  x = T(x0, c)                                               # one networ
   </div>
 
   <h2>Try it</h2>
-  <p>The SBM-XL text-to-image map, live: type a prompt and the map returns eight images, one network evaluation each, from the Space on Hugging Face ZeroGPU. The first request after idle time wakes the Space, which takes about a minute; later ones return in about a second. Full-sentence prompts work best. Without a Hugging Face account the GPU allows a few runs a day per address; for more, open the demo on <a href="https://huggingface.co/spaces/tullebulle/sbm-t2i">Hugging Face</a> and sign in. Eight fixed seeds for twelve prompts, with nothing selected, are in the <a href="seeds/">seed gallery</a>.</p>
+  <p>The SBM-XL text-to-image map, live: type a prompt and the map returns eight images, one network evaluation each. The first request after idle time wakes the GPU, which takes about a minute; later ones return in about a second. Full-sentence prompts work best. Each address has a daily allowance of generations and a ten-second pause between requests. Eight fixed seeds for twelve prompts, with nothing selected, are in the <a href="seeds/">seed gallery</a>.</p>
   <div class="demo" id="t2i-demo">
     <form class="demo-form" id="t2i-form">
       <label class="demo-prompt"><span class="lab">Prompt</span><textarea id="t2i-prompt" rows="2" placeholder="a red fox standing in a snowy forest" maxlength="400"></textarea></label>
@@ -333,7 +333,7 @@ sample:  x = T(x0, c)                                               # one networ
     </form>
     <div class="demo-examples" id="t2i-examples" aria-label="Example prompts"></div>
     <div class="demo-strip" id="t2i-strip"></div>
-    <p class="cap">The map runs on <a href="https://huggingface.co/spaces/tullebulle/sbm-t2i">huggingface.co/spaces/tullebulle/sbm-t2i</a>, where the Space&rsquo;s own interface is available too. Images open full size in a new tab.</p>
+    <p class="cap">Hosted on Hugging Face ZeroGPU. Images open full size in a new tab.</p>
   </div>
 
   <h2>World modelling</h2>
@@ -423,6 +423,6 @@ sample:  x = T(x0, c)                                               # one networ
 <script src="assets/btm_anim.js"></script>
 <script src="assets/fig1_fields.js"></script>
 <script src="assets/fig1_anim.js"></script>
-<script src="assets/t2i_demo.js?v=4"></script>
+<script src="assets/t2i_demo.js?v=5"></script>
 </body>
 </html>
