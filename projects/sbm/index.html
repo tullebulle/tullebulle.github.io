@@ -239,15 +239,7 @@ sample:  x = T(x0, c)                                               # one networ
   <section class="block reveal" id="results">
     <p class="eyebrow">Results</p>
     <h2>Three tasks, one network call</h2>
-    <figure class="fig">
-      <img src="assets/fig4_imagenet.png" alt="Three panels: FID against training compute during pretraining at base size; final one-step FID against training compute for published models; FDr6 against FID" loading="lazy" decoding="async" />
-      <figcaption class="cap"><b>ImageNet 256&times;256.</b> Left: at base size SBM is ahead of every baseline at every epoch and passes BTM-XL/2&rsquo;s final FID within ten epochs. Centre: SBM-B and SBM-XL sit on the compute&ndash;FID front; SBM-XL reaches 1.61 at 800 EFLOP where iMF-XL/2 reports 1.72 at 3,200. Right: the six-encoder Fr&eacute;chet distance agrees.</figcaption>
-    </figure>
-    <figure class="fig medium">
-      <img src="assets/fig6_geneval.png" alt="GenEval against inference compute per image and against training compute: SBM-B and SBM-XL are the only one-step points" loading="lazy" decoding="async" />
-      <figcaption class="cap"><b>Text to image.</b> GenEval against inference and training compute. SBM-XL scores 0.856 with one network evaluation; the other methods use 4 to 200 per image.</figcaption>
-    </figure>
-    <p class="prose" style="margin-top:1.6rem"><b class="sf">World models.</b> Given four frames and their actions, the map predicts the next frame in one evaluation, trained without guidance or a feature loss. The first eight generated frames are scored against the ground truth; after the tick the model runs on its own frames.</p>
+    <p class="prose"><b class="sf">World models.</b> Given four frames and their actions, the map predicts the next frame in one evaluation, trained without guidance or a feature loss. The first eight generated frames are scored against the ground truth; after the tick the model runs on its own frames.</p>
     <div class="loops">
       <figure class="loop wide">
         <img src="assets/rollouts/bridge_000000027.webp" alt="Bridge-V2 rollout, move the silver pan to the right side of the table: ground truth, DriftWorld and SBM frames side by side, looping" loading="lazy" decoding="async" />
@@ -266,6 +258,15 @@ sample:  x = T(x0, c)                                               # one networ
         <figcaption class="cap"><b>RT-1.</b> &ldquo;Open middle drawer.&rdquo; The drawer opens and stays open through 47 generated frames.</figcaption>
       </figure>
     </div>
+    <p class="prose" style="margin-top:1.6rem"><b class="sf">ImageNet and text to image.</b> Trained from scratch in the latent of a representation autoencoder, with one map evaluation and one decoder call per image.</p>
+    <figure class="fig">
+      <img src="assets/fig4_imagenet.png" alt="Three panels: FID against training compute during pretraining at base size; final one-step FID against training compute for published models; FDr6 against FID" loading="lazy" decoding="async" />
+      <figcaption class="cap"><b>ImageNet 256&times;256.</b> Left: at base size SBM is ahead of every baseline at every epoch and passes BTM-XL/2&rsquo;s final FID within ten epochs. Centre: SBM-B and SBM-XL sit on the compute&ndash;FID front; SBM-XL reaches 1.61 at 800 EFLOP where iMF-XL/2 reports 1.72 at 3,200. Right: the six-encoder Fr&eacute;chet distance agrees.</figcaption>
+    </figure>
+    <figure class="fig medium">
+      <img src="assets/fig6_geneval.png" alt="GenEval against inference compute per image and against training compute: SBM-B and SBM-XL are the only one-step points" loading="lazy" decoding="async" />
+      <figcaption class="cap"><b>Text to image.</b> GenEval against inference and training compute. SBM-XL scores 0.856 with one network evaluation; the other methods use 4 to 200 per image.</figcaption>
+    </figure>
     <details class="more">
       <summary>Full tables</summary>
       <p class="cap above"><span class="lab">Table 1</span> <b>ImageNet 256&times;256.</b> Params: generator + autoencoder decoder. Auxiliary: an additional network used in training. Guidance: CFG on velocity predictions, or guidance built from data without a velocity.</p>
