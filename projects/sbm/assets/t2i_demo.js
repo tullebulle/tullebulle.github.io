@@ -138,6 +138,7 @@
       setStatus("In the GPU queue…");
       var out = await waitResult(ev);
       var items = out[0] || [], info = typeof out[1] === "string" ? out[1] : "";
+      if (/^ERROR:/.test(info)) throw fail("generation", new Error(info.replace(/^ERROR:\s*/, "")));
       var urls = items.map(function (it) { var im = it && (it.image || it); return im && im.url; }).filter(Boolean);
       if (!urls.length) throw fail("generation", new Error("The checker withheld every image for this prompt."));
       showImages(urls, prompt);
