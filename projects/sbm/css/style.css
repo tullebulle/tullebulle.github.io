@@ -107,6 +107,7 @@ b, strong { font-family: var(--sf); font-weight: 700; }   /* the paper's \textbf
 }
 
 .titlebox .authors sup { font-weight: 400; }
+.titlebox .authors .row { display: block; }   /* two rows of four names */
 
 .titlebox .affil {
     font-size: 0.92rem;
