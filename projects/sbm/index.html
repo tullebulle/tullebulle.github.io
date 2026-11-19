@@ -129,7 +129,7 @@
           <span><i class="sw" style="background:#B23A8C"></i>0.10</span>
           <span><i class="sw" style="background:#C9961A"></i>0.15</span>
           <span><i class="ln" style="border-color:#3B3833"></i>separatrices of the map (white on the energy view)</span>
-          <span><i class="ln dotted" style="border-color:#4A4A4A"></i>BTM separatrices, for comparison</span>
+          <span><i class="ln dotted" style="border-color:#4A4A4A"></i>Beckmann map separatrices, for comparison</span>
           <span><i class="sw energy"></i>energy bands <i>E</i> = &minus;&phi;, &Delta;&phi; = &nabla;&middot;<i>J</i></span>
           <span>colour = the atom a point ends at; hover the right panels to follow one flow line</span>
         </div>
@@ -137,23 +137,23 @@
     </div>
     <details class="more">
       <summary>What the three panels show</summary>
-      <p class="cap">The same noise draws in every panel. <b>Left:</b> flow matching regresses <i>x</i><sub>1</sub> &minus; <i>x</i><sub>0</sub> on a field <i>b<sub>t</sub></i>(<i>x</i>) that depends on the flow time <i>t</i>, so sampling integrates a field that keeps changing as <i>t</i> runs from 0 to 1. <b>Centre:</b> the same regression over functions of <i>x</i> alone gives the autonomous field <i>b</i> = <i>J</i>/&nu;, the time-averaged probability flux over the occupation density, with &nabla;&middot;<i>J</i> = &mu;<sub>0</sub> &minus; &mu;<sub>1</sub>: noise is a source, data a sink. Its flow lines never change. The coloured basins are the one-step map <i>T</i>, which is constant along every flow line (<i>J</i>&middot;&nabla;<i>T</i> = 0, the conservation law BTM trains on), and each basin carries the mass of its atom. <b>Right:</b> Equilibrium Matching fits the same time-independent field, but to the target <i>c<sub>t</sub></i>(<i>x</i><sub>1</sub> &minus; <i>x</i><sub>0</sub>) with a schedule <i>c<sub>t</sub></i> = (1 &minus; <i>t</i>)<sup>&kappa;</sup> that vanishes at the data, so that the field stops there and can be read as the gradient of an implicit energy whose minima are the data points. The landscape behind the flow is the Coulomb energy of that current, <i>E</i> = &minus;&phi; with &Delta;&phi; = &nabla;&middot;<i>J</i>. At &kappa; = 0 the charge is exactly &mu;<sub>0</sub> &minus; &mu;<sub>1</sub>, the Beckmann balance. For any other schedule the target is no longer the velocity of the interpolant: the sink becomes &kappa;&int;(1 &minus; <i>t</i>)<sup>&kappa;&minus;1</sup>&rho;<sub><i>t</i></sub> d<i>t</i>, a unit charge smeared back along the interpolation paths, the wells widen and flatten, and the flow still reaches the atoms but with the wrong weights. Move the slider: the EqM separatrices (white) drift away from BTM&rsquo;s (dotted), the heaviest basins grow at the expense of the lightest, and the mean error of the basin masses rises from 0.001 at &kappa; = 0 to 0.054 at &kappa; = 0.8, where the lightest atom keeps 0.03 of the noise instead of 0.10.</p>
+      <p class="cap">The same noise draws in every panel. <b>Left:</b> flow matching regresses <i>x</i><sub>1</sub> &minus; <i>x</i><sub>0</sub> on a field <i>b<sub>t</sub></i>(<i>x</i>) that depends on the flow time <i>t</i>, so sampling integrates a field that keeps changing as <i>t</i> runs from 0 to 1. <b>Centre:</b> the same regression over functions of <i>x</i> alone gives the autonomous field <i>b</i> = <i>J</i>/&nu;, the time-averaged probability flux over the occupation density, with &nabla;&middot;<i>J</i> = &mu;<sub>0</sub> &minus; &mu;<sub>1</sub>: noise is a source, data a sink. Its flow lines never change. The coloured basins are the one-step map <i>T</i>, which is constant along every flow line (<i>J</i>&middot;&nabla;<i>T</i> = 0, the conservation law BTM trains on), and each basin carries the mass of its atom. <b>Right:</b> Equilibrium Matching fits the same time-independent field, but to the target <i>c<sub>t</sub></i>(<i>x</i><sub>1</sub> &minus; <i>x</i><sub>0</sub>) with a schedule <i>c<sub>t</sub></i> = (1 &minus; <i>t</i>)<sup>&kappa;</sup> that vanishes at the data, so that the field stops there and can be read as the gradient of an implicit energy whose minima are the data points. The landscape behind the flow is the Coulomb energy of that current, <i>E</i> = &minus;&phi; with &Delta;&phi; = &nabla;&middot;<i>J</i>. At &kappa; = 0 the charge is exactly &mu;<sub>0</sub> &minus; &mu;<sub>1</sub>, the Beckmann balance. For any other schedule the target is no longer the velocity of the interpolant: the sink becomes &kappa;&int;(1 &minus; <i>t</i>)<sup>&kappa;&minus;1</sup>&rho;<sub><i>t</i></sub> d<i>t</i>, a unit charge smeared back along the interpolation paths, the wells widen and flatten, and the flow still reaches the atoms but with the wrong weights. Move the slider: the EqM separatrices (white) drift away from the Beckmann map&rsquo;s (dotted), the heaviest basins grow at the expense of the lightest, and the mean error of the basin masses rises from 0.001 at &kappa; = 0 to 0.054 at &kappa; = 0.8, where the lightest atom keeps 0.03 of the noise instead of 0.10.</p>
     </details>
   </section>
 
   <section class="block reveal" id="guidance">
     <p class="eyebrow">What SBM adds</p>
     <h2>Guidance moves the basins</h2>
-    <p class="prose">The BTM current is a positive multiple of a denoising field, so classifier-free guidance applies to it as it does to a velocity. SBM guides the map during training with its own conditional and null predictions: no second network, and sampling stays one call. Where the two predictions disagree, the separatrix moves toward the mode the condition favours. Drag &omega;.</p>
+    <p class="prose">The current of a Beckmann map is a positive multiple of a denoising field, so classifier-free guidance applies to it as it does to a velocity. SBM guides the map during training with its own conditional and null predictions: no second network, and sampling stays one call. Where the two predictions disagree, the separatrix moves toward the mode the condition favours. Drag &omega;.</p>
     <div class="anim" id="fig1-anim">
       <div class="anim-panels three">
         <div class="anim-panel">
           <div class="anim-title">(a) One SBM training step</div>
-          <div class="anim-stage static"><img src="assets/fig1a.svg" alt="One SBM training step on the two-atom toy: the BTM transport direction, the conditional-null correction and the guided direction at the interpolant point" /></div>
+          <div class="anim-stage static"><img src="assets/fig1a.svg" alt="One SBM training step on the two-atom toy: the unguided transport direction, the conditional-null correction and the guided direction at the interpolant point" /></div>
           <div class="anim-read">one pair (<i>x</i><sub>0</sub>, <i>x</i><sub>1</sub> = &minus;e<sub>1</sub>) at <i>S</i> = 0.3</div>
         </div>
         <div class="anim-panel">
-          <div class="anim-title">(b) BTM, &omega; = 1</div>
+          <div class="anim-title">(b) Beckmann map, &omega; = 1</div>
           <div class="anim-stage"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
           <div class="anim-read"></div>
         </div>
@@ -172,7 +172,7 @@
           <span><i class="sw" style="background:#1769E0"></i>sent to &minus;e<sub>1</sub></span>
           <span><i class="sw" style="background:#BB5078"></i>reassigned by guidance</span>
           <span><i class="sw hatch"></i><i>T</i>(&middot;, <i>c</i>) &ne; <i>T</i>(&middot;, &empty;)</span>
-          <span><i class="ln" style="border-color:#4A4A4A"></i>BTM separatrix</span>
+          <span><i class="ln" style="border-color:#4A4A4A"></i>unguided separatrix</span>
           <span><i class="ln" style="border-color:#1B8A6B"></i>SBM separatrix</span>
           <span><i class="ln dashed" style="border-color:#8F8E88"></i>null separatrix</span>
         </div>
@@ -181,8 +181,8 @@
     <details class="more">
       <summary>What the three panels show</summary>
       <p class="cap">Gaussian noise in the plane, data at &plusmn;e<sub>1</sub>, class <i>c</i> with weights 0.8 / 0.2 and null with 0.5 / 0.5. Background colours show where the conditional map sends each noise point.
-        <b>(a)</b> One training step: a class-<i>c</i> pair whose data point is the minority mode gives the BTM transport direction (blue); where the conditional and null predictions disagree (hatched), the correction (1&nbsp;&minus;&nbsp;&omega;<sup>&minus;1</sup>)(<i>T</i>(<i>I<sub>S</sub></i>,&nbsp;<i>c</i>) &minus; <i>T</i>(<i>I<sub>S</sub></i>,&nbsp;&empty;)) tilts the direction toward the mode the condition favours (green).
-        <b>(b)</b> BTM, live: noise flows along the autonomous conditional current to the two data points, and the separatrix splits it 80 / 20, matching the class weights.
+        <b>(a)</b> One training step: a class-<i>c</i> pair whose data point is the minority mode gives the unguided transport direction (blue); where the conditional and null predictions disagree (hatched), the correction (1&nbsp;&minus;&nbsp;&omega;<sup>&minus;1</sup>)(<i>T</i>(<i>I<sub>S</sub></i>,&nbsp;<i>c</i>) &minus; <i>T</i>(<i>I<sub>S</sub></i>,&nbsp;&empty;)) tilts the direction toward the mode the condition favours (green).
+        <b>(b)</b> The Beckmann map, live: noise flows along the autonomous conditional current to the two data points, and the separatrix splits it 80 / 20, matching the class weights.
         <b>(c)</b> SBM with &omega;&nbsp;&gt;&nbsp;1, live, same noise draws as (b): the current changes only where the maps disagree, between the SBM separatrix and the null separatrix, so the separatrix moves left and at &omega; = 2 about 86 % of the noise reaches +e<sub>1</sub>; both data points stay fixed. The noise that guidance reassigns is shaded green and drawn in magenta.</p>
     </details>
   </section>
@@ -208,13 +208,13 @@
 
   <section class="block reveal" id="method">
     <p class="eyebrow">Method</p>
-    <h2>One change to the BTM target</h2>
-    <p class="prose">BTM trains the map <i>T</i> to be constant along the flow lines of a time-independent current, with a stop-gradient transport loss and a boundary loss. SBM keeps both and adds one term to the transport direction: the map&rsquo;s own conditional&ndash;null disagreement, scaled by 1&nbsp;&minus;&nbsp;&omega;<sup>&minus;1</sup>. At &omega;&nbsp;=&nbsp;1 it is BTM.</p>
+    <h2>Guided transport direction</h2>
+    <p class="prose">A Beckmann map <i>T</i> is trained to be constant along the flow lines of a time-independent current, with a stop-gradient transport loss and a boundary loss. SBM keeps both and adds one term to the transport direction: the map&rsquo;s own conditional&ndash;null disagreement, scaled by 1&nbsp;&minus;&nbsp;&omega;<sup>&minus;1</sup>. At &omega;&nbsp;=&nbsp;1 it is the plain Beckmann map.</p>
     <div class="box">
       <img class="eq tall" src="assets/eq/eq_direction.svg" alt="I-dot-S-omega equals I-dot-S plus (1 minus omega inverse) over (1 minus S) times (T(I_S) minus T_null(I_S))" />
     </div>
     <div class="algo">
-      <div class="algo-head">Algorithm 1 <span>Simple SBM training (&omega; = 1 is BTM)</span></div>
+      <div class="algo-head">Algorithm 1 <span>Simple SBM training (&omega; = 1 is the plain Beckmann map)</span></div>
 <pre>for each training step:
     draw x0 ~ N(0, I),  (x1, c) ~ data,  S ~ U(0, 1);  replace c by &empty; with a fixed probability
     I_S = (1 - S) x0 + S x1
@@ -230,9 +230,9 @@ sample:  x = T(x0, c)                                               # one networ
       <div class="steps">
         <div><p><span class="lead">The current is a denoising field.</span> With the linear interpolant <i>I<sub>S</sub></i>&nbsp;=&nbsp;(1&nbsp;&minus;&nbsp;<i>S</i>)<i>x</i><sub>0</sub>&nbsp;+&nbsp;<i>S x</i><sub>1</sub> and <i>S</i> uniform, the conditional current factors as <i>J<sub>c</sub></i>&nbsp;=&nbsp;<i>h<sub>c</sub></i>&nbsp;(<i>z&#773;<sub>c</sub></i>&nbsp;&minus;&nbsp;id) with <i>h<sub>c</sub></i>&nbsp;&gt;&nbsp;0, where <i>z&#773;<sub>c</sub></i> is a weighted posterior mean of the data: an autonomous denoiser. So CFG applies to the current as it does to a velocity.</p></div>
         <div><p><span class="lead">Implicit CFG on the maps.</span> The guided denoiser is <i>z&#773;<sub>c</sub></i>&nbsp;+&nbsp;(1&nbsp;&minus;&nbsp;&omega;<sup>&minus;1</sup>)(<i>z&#773;<sub>c</sub><sup>&omega;</sup></i>&nbsp;&minus;&nbsp;<i>z&#773;</i><sub>&empty;</sub>). Substituting the map&rsquo;s guided and null endpoint predictions for the denoisers gives the guided transport direction above. Both predictions come from one network through condition dropout.</p></div>
-        <div><p><span class="lead">Self-consistency.</span> Apply BTM&rsquo;s stop-gradient update to the guided direction and the same correction to the boundary target. The population update then vanishes exactly when the map predicts the endpoint of its own guided current, and the guided equations admit a stronger preference for a condition-favoured mode while keeping the data support (the animation above).</p></div>
+        <div><p><span class="lead">Self-consistency.</span> Apply the Beckmann map&rsquo;s stop-gradient update to the guided direction and the same correction to the boundary target. The population update then vanishes exactly when the map predicts the endpoint of its own guided current, and the guided equations admit a stronger preference for a condition-favoured mode while keeping the data support (the animation above).</p></div>
       </div>
-      <p class="cap">The full recipe (Algorithm 2 in the paper) adds a boundary level &gamma;, a frozen copy of the network for the stopped targets, a per-row normalization of the transport loss, an adaptive gradient balancer and a mixture of transport times. The paper characterizes the bias of substituting map predictions for denoisers, proves consistency of the stopped update with a guided conservation equation, and shows that the implicit correction keeps the variance of the BTM target where an explicit guided target multiplies it by &omega;<sup>2</sup>.</p>
+      <p class="cap">The full recipe (Algorithm 2 in the paper) adds a boundary level &gamma;, a frozen copy of the network for the stopped targets, a per-row normalization of the transport loss, an adaptive gradient balancer and a mixture of transport times. The paper characterizes the bias of substituting map predictions for denoisers, proves consistency of the stopped update with a guided conservation equation, and shows that the implicit correction keeps the variance of the unguided target where an explicit guided target multiplies it by &omega;<sup>2</sup>.</p>
     </details>
   </section>
 
