@@ -116,6 +116,7 @@
       return ["This address has used its free GPU allowance for today. Open the demo on ", link(SPACE, "Hugging Face"), " and sign in to keep going."];
     }
     if (/^busy$/.test(m)) return ["The Space is busy; try again in a moment, or use it on ", link(SPACE, "Hugging Face"), "."];
+    if (/please wait|per minute|hourly limit|per address/i.test(m)) return [m];
     if (/Failed to fetch|NetworkError|abort|Load failed/i.test(m) || name === "AbortError" || name === "TypeError") {
       var why = name === "AbortError" ? "timed out" : "the browser could not reach it";
       return ["No answer from the Space at the " + step + " step (" + why + ", " + name + ": " + m + "). Try again, or open it on ", link(SPACE, "Hugging Face"), "."];
