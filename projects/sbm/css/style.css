@@ -483,3 +483,11 @@ details.more .cap { text-align: left; hyphens: manual; }
   .reveal.in { opacity: 1; transform: none; }
 }
 #cite .bib { margin-top: 0.4rem; }
+
+/* looping world-model rollouts (animated WebP) */
+.loops { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 24px; align-items: start; margin-top: 0.6rem; }
+.loops .loop { margin: 0.4rem 0 0.8rem; min-width: 0; }
+.loops .loop.wide { grid-column: 1 / -1; }
+.loops .loop img { display: block; width: 100%; max-width: 804px; margin: 0 auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.loops .loop .cap { margin-top: 0.45rem; }
+@media (max-width: 760px) { .loops { grid-template-columns: 1fr; } }

@@ -8,7 +8,7 @@
   <link rel="icon" href="/ulrik-unneberg-vv-logo-verdigris/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/ulrik-unneberg-vv-logo-verdigris/apple-touch-icon.png">
   <meta name="description" content="Project page for Scalable Beckmann Maps (SBM): guidance and a training recipe for one-step Beckmann transport maps. One-step ImageNet 256x256 FID 1.6, GenEval 0.86 and world models that beat DriftWorld, with no teacher and no feature loss." />
-  <link rel="stylesheet" href="css/style.css?v=2" />
+  <link rel="stylesheet" href="css/style.css?v=3" />
   <link rel="preload" as="font" type="font/woff" href="assets/fonts/lmroman10-regular.woff" crossorigin />
 </head>
 <body>
@@ -20,7 +20,7 @@
     <p class="tagline">One network evaluation per sample. Trained from scratch. No teacher, no feature network, and guidance built into training.</p>
     <p class="authors">
       <span class="row">Ulrik Unneberg<sup>1,&#8902;</sup>, Shiyi Wang<sup>1,&#8902;</sup>, Lee Cheuk-Kit<sup>1</sup>, Felix Berg<sup>2</sup></span>
-      <span class="row">Boris Kozinsky<sup>1</sup>, Yilun Du<sup>1</sup>, Michael Albergo<sup>1</sup>, Eric Vanden-Eijnden<sup>3,4</sup></span>
+      <span class="row">Boris Kozinsky<sup>1</sup>, Yilun Du<sup>1</sup>, Michael S. Albergo<sup>1</sup>, Eric Vanden-Eijnden<sup>3,4</sup></span>
     </p>
     <p class="affil"><sup>1</sup>Harvard University, <sup>2</sup>Imperial College London, <sup>3</sup>New York University, <sup>4</sup>Capital Fund Management</p>
     <p class="contrib">Preprint, 2026. <sup>&#8902;</sup>Core contributors.</p>
@@ -240,27 +240,32 @@ sample:  x = T(x0, c)                                               # one networ
     <p class="eyebrow">Results</p>
     <h2>Three tasks, one network call</h2>
     <figure class="fig">
-      <img src="assets/fig4_imagenet.png" alt="Three panels: FID against training compute during pretraining at base size; final one-step FID against training compute for published models; FDr5 against FID" loading="lazy" decoding="async" />
-      <figcaption class="cap"><b>ImageNet 256&times;256.</b> Left: at base size SBM is ahead of every baseline at every epoch and passes BTM-XL/2&rsquo;s final FID within ten epochs. Centre: SBM-B and SBM-XL sit on the compute&ndash;FID front; SBM-XL reaches 1.61 at 800 EFLOP where iMF-XL/2 reports 1.72 at 3,200. Right: the semantic Fr&eacute;chet distances agree.</figcaption>
+      <img src="assets/fig4_imagenet.png" alt="Three panels: FID against training compute during pretraining at base size; final one-step FID against training compute for published models; FDr6 against FID" loading="lazy" decoding="async" />
+      <figcaption class="cap"><b>ImageNet 256&times;256.</b> Left: at base size SBM is ahead of every baseline at every epoch and passes BTM-XL/2&rsquo;s final FID within ten epochs. Centre: SBM-B and SBM-XL sit on the compute&ndash;FID front; SBM-XL reaches 1.61 at 800 EFLOP where iMF-XL/2 reports 1.72 at 3,200. Right: the six-encoder Fr&eacute;chet distance agrees.</figcaption>
     </figure>
-    <figure class="fig">
-      <img src="assets/fig2_btm_vs_sbm.png" alt="Four panels: FID against training compute for BTM and SBM at base size; per-class separation of generated versus real class means; histogram of within-class spread ratios; precision-recall curves against the read-time label scale" loading="lazy" decoding="async" />
-      <figcaption class="cap"><b>SBM against native BTM</b>, same network, latent, data and sampler. SBM reads at ten epochs what BTM has not reached after a hundred (9.3 against 51 at 100 epochs), its class means and within-class spreads match the data, and its precision&ndash;recall curve lies above BTM&rsquo;s at every recall.</figcaption>
+    <figure class="fig medium">
+      <img src="assets/fig6_geneval.png" alt="GenEval against inference compute per image and against training compute: SBM-B and SBM-XL are the only one-step points" loading="lazy" decoding="async" />
+      <figcaption class="cap"><b>Text to image.</b> GenEval against inference and training compute. SBM-XL scores 0.856 with one network evaluation; the other methods use 4 to 200 per image.</figcaption>
     </figure>
-    <div class="two-figs">
-      <figure class="fig">
-        <img src="assets/fig6_geneval.png" alt="GenEval against inference compute per image and against training compute: SBM-B and SBM-XL are the only one-step points" loading="lazy" decoding="async" />
-        <figcaption class="cap"><b>Text to image.</b> GenEval against inference and training compute. SBM is the only one-step method; the others use 4 to 200 network evaluations per image.</figcaption>
+    <p class="prose" style="margin-top:1.6rem"><b class="sf">World models.</b> Given four frames and their actions, the map predicts the next frame in one evaluation, trained without guidance or a feature loss. The first eight generated frames are scored against the ground truth; after the tick the model runs on its own frames.</p>
+    <div class="loops">
+      <figure class="loop wide">
+        <img src="assets/rollouts/bridge_000000027.webp" alt="Bridge-V2 rollout, move the silver pan to the right side of the table: ground truth, DriftWorld and SBM frames side by side, looping" loading="lazy" decoding="async" />
+        <figcaption class="cap"><b>Bridge-V2.</b> &ldquo;Move the silver pan to the right side of the table.&rdquo; DriftWorld&rsquo;s arm and pan dissolve once it runs on its own frames; SBM moves the pan.</figcaption>
       </figure>
-      <figure class="fig">
-        <img src="assets/fig7_ablations.png" alt="Left: FID at 20 epochs as each recipe change is added, from the original BTM configuration at 75.6 to SBM at 20.7. Right: the FID change when each component is removed from the full recipe" loading="lazy" decoding="async" />
-        <figcaption class="cap"><b>From BTM to SBM.</b> Guidance is the change that matters: it takes the map from 46.7 to 20.7 FID at the same epoch budget. Removing any other component of the recipe costs less than eight points.</figcaption>
+      <figure class="loop wide">
+        <img src="assets/rollouts/bridge_000000006.webp" alt="Bridge-V2 rollout, bring the violet cloth to the front edge of the table: ground truth, DriftWorld and SBM frames side by side, looping" loading="lazy" decoding="async" />
+        <figcaption class="cap"><b>Bridge-V2.</b> &ldquo;Bring the violet cloth to the front edge of the table.&rdquo; The cloth smears under DriftWorld and stays a cloth under SBM.</figcaption>
+      </figure>
+      <figure class="loop">
+        <img src="assets/rollouts/rt1_000000008.webp" alt="RT-1 rollout, pick sponge from top drawer and place on counter: ground truth and SBM frames side by side, looping" loading="lazy" decoding="async" />
+        <figcaption class="cap"><b>RT-1.</b> &ldquo;Pick sponge from top drawer and place on counter.&rdquo; SBM lifts the sponge and sets it on the counter, 43 frames on its own.</figcaption>
+      </figure>
+      <figure class="loop">
+        <img src="assets/rollouts/rt1_000000007.webp" alt="RT-1 rollout, open middle drawer: ground truth and SBM frames side by side, looping" loading="lazy" decoding="async" />
+        <figcaption class="cap"><b>RT-1.</b> &ldquo;Open middle drawer.&rdquo; The drawer opens and stays open through 47 generated frames.</figcaption>
       </figure>
     </div>
-    <figure class="fig medium">
-      <img src="assets/fig5_world_models.jpg" alt="Rollouts on Bridge-V2 and RT-1: ground truth, DriftWorld and SBM frames over time" loading="lazy" decoding="async" />
-      <figcaption class="cap"><b>World models.</b> Bridge-V2 (left) and RT-1 (right) rollouts, trained without guidance or a feature loss. Past the eight scored frames the model runs on its own frames: DriftWorld&rsquo;s arm dissolves, SBM keeps the arm and the scene intact, at 2.4 to 5.4&times; less training compute.</figcaption>
-    </figure>
     <details class="more">
       <summary>Full tables</summary>
       <p class="cap above"><span class="lab">Table 1</span> <b>ImageNet 256&times;256.</b> Params: generator + autoencoder decoder. Auxiliary: an additional network used in training. Guidance: CFG on velocity predictions, or guidance built from data without a velocity.</p>
@@ -339,10 +344,6 @@ sample:  x = T(x0, c)                                               # one networ
           </div>
         </div>
       </div>
-      <figure class="fig">
-        <img src="assets/fig3_btm_vs_sbm_samples.jpg" alt="Two rows of five images, daisy, lion, bald eagle, bubble and pirate ship, generated by BTM (top) and SBM (bottom)" loading="lazy" decoding="async" />
-        <figcaption class="cap"><b>BTM (top) against SBM (bottom)</b> for daisy, lion, bald eagle, bubble and pirate ship; the best-looking of 50 samples from each model.</figcaption>
-      </figure>
     </details>
   </section>
 
@@ -350,7 +351,7 @@ sample:  x = T(x0, c)                                               # one networ
     <p class="eyebrow">Citation</p>
 <pre class="bib">@article{unneberg2026sbm,
   title   = {Scalable Beckmann Maps improve one-step generation},
-  author  = {Unneberg, Ulrik and Wang, Shiyi and Lee, Cheuk-Kit and Berg, Felix and Kozinsky, Boris and Du, Yilun and Albergo, Michael and Vanden-Eijnden, Eric},
+  author  = {Unneberg, Ulrik and Wang, Shiyi and Lee, Cheuk-Kit and Berg, Felix and Kozinsky, Boris and Du, Yilun and Albergo, Michael S. and Vanden-Eijnden, Eric},
   journal = {arXiv preprint},
   year    = {2026}
 }</pre>
