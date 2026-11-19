@@ -63,7 +63,7 @@
       guidance can move the boundaries between basins, sending more noise to the modes a condition favors. Trained from scratch in the
       latent of a representation autoencoder, SBM reaches a one-step FID of 1.6 on ImageNet 256&times;256 without a teacher or a feature
       loss, and a GenEval score of 0.86 in text-to-image generation with one network evaluation. As a world model, where we train without
-      guidance, the recipe alone outperforms DriftWorld on all five metrics of two robot-manipulation benchmarks, with 2.4&ndash;5.4&times;
+      guidance, the recipe alone outperforms DriftWorld on all five metrics of two robot-manipulation benchmarks, with 1.9&ndash;2.8&times;
       less training compute and no pretrained auxiliary feature encoder.
     </p>
   </section>
@@ -258,7 +258,7 @@ sample:  x = T(x0, c)                                               # one networ
     <p class="prose" style="margin-top:1.6rem"><b class="sf">ImageNet and text to image.</b> Trained from scratch in the latent of a representation autoencoder, with one map evaluation and one decoder call per image.</p>
     <figure class="fig">
       <img src="assets/fig4_imagenet.png" alt="Three panels: FID against training compute during pretraining at base size; final one-step FID against training compute for published models; FDr6 against FID" loading="lazy" decoding="async" />
-      <figcaption class="cap"><b>ImageNet 256&times;256.</b> Left: at base size SBM is ahead of every baseline at every epoch and passes BTM-XL/2&rsquo;s final FID within ten epochs. Centre: SBM-B and SBM-XL sit on the compute&ndash;FID front; SBM-XL reaches 1.61 at 800 EFLOP where iMF-XL/2 reports 1.72 at 3,200. Right: the six-encoder Fr&eacute;chet distance agrees.</figcaption>
+      <figcaption class="cap"><b>ImageNet 256&times;256.</b> Left: at base size SBM is ahead of every baseline at every epoch and passes BTM-XL/2&rsquo;s final FID within ten epochs. Centre: SBM-B and SBM-XL sit on the compute&ndash;FID front; SBM-XL reaches 1.61 at 800 EFLOP where iMF-XL/2 reports 1.72 at 3,500. Right: the six-encoder Fr&eacute;chet distance agrees.</figcaption>
     </figure>
     <figure class="fig medium">
       <img src="assets/fig6_geneval.png" alt="GenEval against inference compute per image and against training compute: SBM-B and SBM-XL are the only one-step points" loading="lazy" decoding="async" />
@@ -284,8 +284,8 @@ sample:  x = T(x0, c)                                               # one networ
             <tr><td>Drifting L/2</td><td>SD-VAE</td><td>463M + 49M</td><td>MAE-640 (2.13B)</td><td>Data</td><td class="num">1</td><td class="num">1.54</td><td class="num">258.9</td></tr>
             <tr><td>BTM XL/2</td><td>SD-VAE</td><td class="dash">&ndash;</td><td class="dash">&ndash;</td><td class="dash">&ndash;</td><td class="num">1</td><td class="num">17.58</td><td class="num dash">&ndash;</td></tr>
             <tr class="ours"><td>SBM-XL/2 (SD-VAE)</td><td>SD-VAE</td><td>675M + 49M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">3.5</td><td class="num dash">&ndash;</td></tr>
-            <tr class="ours"><td>SBM-B (RAE)</td><td>RAE</td><td>118M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">2.79</td><td class="num dash">&ndash;</td></tr>
-            <tr class="ours"><td>SBM-XL (RAE)</td><td>RAE</td><td>669M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">1.61</td><td class="num">256.5</td></tr>
+            <tr class="ours"><td>SBM-B (RAE)</td><td>RAE</td><td>129M + 415M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">2.79</td><td class="num dash">&ndash;</td></tr>
+            <tr class="ours"><td>SBM-XL (RAE)</td><td>RAE</td><td>669M + 415M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">1.61</td><td class="num">256.5</td></tr>
           </tbody>
         </table>
       </div>
@@ -318,7 +318,7 @@ sample:  x = T(x0, c)                                               # one networ
                 <tr><td>IWS</td><td class="num dash">&ndash;</td><td class="num">0.786</td><td class="num">22.85</td><td class="num">0.169</td><td class="num">45.30</td><td class="num">329.75</td><td class="num">4</td></tr>
                 <tr><td>LVDM</td><td class="num dash">&ndash;</td><td class="num">0.741</td><td class="num">19.19</td><td class="num">0.154</td><td class="num">9.86</td><td class="num">103.51</td><td class="num">59</td></tr>
                 <tr><td>VDM</td><td class="num dash">&ndash;</td><td class="num">0.725</td><td class="num">18.42</td><td class="num">0.167</td><td class="num">39.88</td><td class="num">159.16</td><td class="num">59</td></tr>
-                <tr><td>DriftWorld</td><td class="num">37.05</td><td class="num">0.835</td><td class="num">22.69</td><td class="num">0.091</td><td class="num">4.86</td><td class="num">46.05</td><td class="num">1</td></tr>
+                <tr><td>DriftWorld</td><td class="num">&ge; 30.4</td><td class="num">0.835</td><td class="num">22.69</td><td class="num">0.091</td><td class="num">4.86</td><td class="num">46.05</td><td class="num">1</td></tr>
                 <tr class="ours"><td>SBM</td><td class="num">15.6</td><td class="num">0.869</td><td class="num">24.80</td><td class="num">0.060</td><td class="num">4.25</td><td class="num">18.1</td><td class="num">1</td></tr>
               </tbody>
             </table>
@@ -334,7 +334,7 @@ sample:  x = T(x0, c)                                               # one networ
                 <tr><td>IWS</td><td class="num dash">&ndash;</td><td class="num">0.807</td><td class="num">24.29</td><td class="num">0.167</td><td class="num">46.81</td><td class="num">448.2</td><td class="num">4</td><td class="num">0.023</td></tr>
                 <tr><td>LVDM</td><td class="num dash">&ndash;</td><td class="num">0.750</td><td class="num">21.00</td><td class="num">0.153</td><td class="num">5.40</td><td class="num">94.6</td><td class="num">59</td><td class="num">0.284</td></tr>
                 <tr><td>VDM</td><td class="num dash">&ndash;</td><td class="num">0.540</td><td class="num">13.82</td><td class="num">0.246</td><td class="num">31.68</td><td class="num">406.1</td><td class="num">59</td><td class="num">3.153</td></tr>
-                <tr><td>DriftWorld</td><td class="num">30.7</td><td class="num">0.841</td><td class="num">24.20</td><td class="num">0.097</td><td class="num">8.99</td><td class="num">62.8</td><td class="num">1</td><td class="num">0.019</td></tr>
+                <tr><td>DriftWorld</td><td class="num">&ge; 16.1</td><td class="num">0.841</td><td class="num">24.20</td><td class="num">0.097</td><td class="num">8.99</td><td class="num">62.8</td><td class="num">1</td><td class="num">0.019</td></tr>
                 <tr class="ours"><td>SBM (short run)</td><td class="num">5.7</td><td class="num">0.864</td><td class="num">25.61</td><td class="num">0.071</td><td class="num">7.70</td><td class="num">28.3</td><td class="num">1</td><td class="num">0.014</td></tr>
                 <tr class="ours"><td>SBM (long run)</td><td class="num">43.4</td><td class="num">0.880</td><td class="num">26.90</td><td class="num">0.057</td><td class="num">4.02</td><td class="num">16.1</td><td class="num">1</td><td class="num">0.014</td></tr>
               </tbody>
