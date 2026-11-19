@@ -58,8 +58,8 @@
   }
   function allowanceText(left, total) {
     if (left === null) return "";
-    if (left === 0) return " That was the last of today's " + total + " generations for this address.";
-    return " You have " + left + " more generation" + (left === 1 ? "" : "s") + " today.";
+    if (left === 0) return " That was the last of the " + total + " generations a day the free Hugging Face GPU allows per address.";
+    return " You have " + left + " more generation" + (left === 1 ? "" : "s") + " today (the free Hugging Face GPU allows " + total + " per day per address).";
   }
 
   async function startCall(prompt, seed) {
@@ -130,7 +130,7 @@
 
   function describeError(e) {
     var m = (e && e.message) || String(e), step = e && e.step ? e.step : "request", name = (e && e.name) || "Error";
-    if (/quota|runs limit|GPU limit/i.test(m)) return "The GPU behind this demo allows only a few generations per day for each address, and this address has used them for today.";
+    if (/quota|runs limit|GPU limit/i.test(m)) return "The free Hugging Face GPU behind this demo allows 3 generations per day for each address, and this address has used them for today.";
     if (/^busy$/.test(m)) return "The GPU is busy; try again in a moment.";
     if (/Failed to fetch|NetworkError|abort|Load failed/i.test(m) || name === "AbortError" || name === "TypeError") {
       var why = name === "AbortError" ? "timed out" : "the browser could not reach it";
