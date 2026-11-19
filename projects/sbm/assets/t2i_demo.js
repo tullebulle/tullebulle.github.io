@@ -165,6 +165,7 @@
       var gm = /([\d.]+) s total/.exec(info), gpu = gm ? gm[1] + " s on the GPU, " : "", sm = /seed (\d+)/.exec(info);
       var lm = /left (\d+)\/(\d+) today/.exec(info), cm = /cooldown (\d+)/.exec(info);
       if (cm) cooldown = parseInt(cm[1], 10);
+      if (/unlimited \(owner\)/.test(info)) cooldown = 0;
       setStatus(urls.length + " images, one network evaluation each: " + gpu + secs + " s round trip" + (sm ? ", seed " + sm[1] : "") + "." +
         (lm ? allowanceText(parseInt(lm[1], 10), parseInt(lm[2], 10)) : ""));
     } catch (e) {
