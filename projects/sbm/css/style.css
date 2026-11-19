@@ -459,7 +459,7 @@ h2 { font-size: 1.75rem; margin: 0.2rem 0 0.8rem; letter-spacing: -0.01em; text-
 .block + .block { padding-top: 0; }
 .eyebrow { font-family: var(--sf); font-weight: 700; font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--juniper); margin: 0 0 0.3rem; }
 .prose { max-width: 74ch; text-align: left; hyphens: manual; margin-bottom: 1rem; }
-.titlebox .tagline { text-align: center; font-size: 1.12rem; color: var(--juniper); font-style: italic; margin: 0.15rem auto 0.9rem; max-width: 60ch; text-wrap: balance; }
+.titlebox .tagline { text-align: center; font-size: 1.12rem; color: var(--juniper); font-style: italic; margin: 0.15rem auto 0.9rem; max-width: 76ch; text-wrap: balance; }
 .titlebox .links { margin-top: 1.1rem; }
 .numbers { margin-top: 0; }
 .number .metric { font-size: 2.6rem; }
