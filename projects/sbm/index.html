@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scalable Beckmann Maps improve one-step generation</title>
+  <meta name="description" content="Project page for Scalable Beckmann Maps (SBM): training-time guidance and a training recipe for one-step Beckmann transport maps. One-step ImageNet 256x256 FID 1.6, GenEval 0.86 and world models that beat DriftWorld, with no teacher and no feature loss." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preload" as="font" type="font/woff" href="assets/fonts/lmroman10-regular.woff" crossorigin />
+</head>
+<body>
+<main class="page">
+
+  <header class="titlebox">
+    <h1>Scalable Beckmann Maps improve one-step generation</h1>
+    <p class="authors">
+      Ulrik Unneberg<sup>1,&#8902;</sup>, Shiyi Wang<sup>1,&#8902;</sup>, Lee Cheuk-Kit<sup>1</sup>, Felix Berg<sup>2</sup>, Boris Kozinsky<sup>1</sup>, Yilun Du<sup>1</sup>, Michael Albergo<sup>1</sup>, Eric Vanden-Eijnden<sup>3,4</sup>
+    </p>
+    <p class="affil"><sup>1</sup>Harvard University, <sup>2</sup>Imperial College London, <sup>3</sup>New York University, <sup>4</sup>Capital Fund Management</p>
+    <p class="contrib">Preprint, 2026. <sup>&#8902;</sup>Core contributors.</p>
+    <div class="rule"></div>
+    <p class="abstract">
+      <span class="lead">Abstract.</span> Beckmann Transport Models (BTM) learn one-step generative maps end-to-end from data, without a
+      teacher, a distillation stage, or pretrained features. We introduce Scalable Beckmann Maps (SBM), which bring to BTM the two
+      ingredients behind the quality of modern multistep generators: classifier-free guidance (CFG) and a training recipe that scales,
+      while keeping sampling at a single network evaluation. CFG combines conditional and unconditional velocity or score predictions,
+      which a Beckmann map does not have. Our guidance rests on one observation: the BTM current is a positive multiple of an autonomous
+      denoising field, to which CFG applies as it does to a velocity. With exact denoisers this gives guided BTM. In practice we
+      substitute the map&rsquo;s own conditional and null predictions for the denoisers, which requires no additional network and
+      introduces a bias that we characterize. We show that the guided update is consistent with a guided conservation equation, and that
+      guidance can move the boundaries between basins, sending more noise to the modes a condition favors. Trained from scratch in the
+      latent of a representation autoencoder, SBM reaches a one-step FID of 1.6 on ImageNet 256&times;256 without a teacher or a feature
+      loss, and a GenEval score of 0.86 in text-to-image generation with one network evaluation. As a world model, where we train without
+      guidance, the recipe alone outperforms DriftWorld on all five metrics of two robot-manipulation benchmarks, with 2.4&ndash;5.4&times;
+      less training compute and no pretrained auxiliary feature encoder.
+    </p>
+    <div class="links">
+      <a href="#" class="btn" aria-disabled="true" title="Link coming soon">Paper (arXiv)</a>
+      <a href="#" class="btn" aria-disabled="true" title="Link coming soon">Code (GitHub)</a>
+      <a href="#" class="btn btn-outline" aria-disabled="true" title="Link coming soon">Weights</a>
+    </div>
+    <p class="links-note">Links coming soon.</p>
+  </header>
+
+  <figure class="fig teaser">
+    <img src="assets/fig_t2i_teaser.jpg" alt="Sixteen text prompts rendered by MiniT2I-L/16 with 200 network evaluations and by SBM with one" fetchpriority="high" />
+    <figcaption class="cap"><span class="lab">Figure 1</span> <b>Uncurated text-to-image samples.</b> SBM trained on the same dataset as MiniT2I, a flow matching model that samples in 100 steps and 200 NFEs due to classifier-free guidance. SBM is a native one-step sampler trained from scratch and reaches similar quality at 1 NFE.</figcaption>
+  </figure>
+
+  <div class="anim" id="btm-anim">
+    <div class="anim-panels three">
+      <div class="anim-panel">
+        <div class="anim-title">Flow matching: a field that changes with time</div>
+        <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas><canvas class="hl"></canvas></div>
+        <div class="anim-read"></div>
+      </div>
+      <div class="anim-panel">
+        <div class="anim-title">BTM: one autonomous field, its basins are the map</div>
+        <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas><canvas class="hl"></canvas></div>
+        <div class="anim-read"></div>
+      </div>
+      <div class="anim-panel">
+        <div class="anim-title" id="eqm-title">Equilibrium Matching, <i>c<sub>t</sub></i> = (1 &minus; <i>t</i>)<sup>0.8</sup></div>
+        <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas><canvas class="hl"></canvas></div>
+        <div class="anim-read"></div>
+      </div>
+    </div>
+    <div class="anim-controls">
+      <button type="button" id="btm-play" class="btn btn-outline">Pause</button>
+      <button type="button" id="btm-replay" class="btn btn-outline">Replay</button>
+      <label for="kappa">EqM schedule <i>c<sub>t</sub></i> = (1 &minus; <i>t</i>)<sup>&kappa;</sup>, &kappa; = <span id="kappa-val">0.8</span></label>
+      <input type="range" id="kappa" min="0" max="1" step="0.2" value="0.8" />
+      <div class="anim-legend">
+        <span>noise <i>x</i><sub>0</sub> ~ N(0, I); atoms with weights</span>
+        <span><i class="sw" style="background:#1B8A6B"></i>0.30</span>
+        <span><i class="sw" style="background:#E8862E"></i>0.15</span>
+        <span><i class="sw" style="background:#2F6FDE"></i>0.30</span>
+        <span><i class="sw" style="background:#B23A8C"></i>0.10</span>
+        <span><i class="sw" style="background:#C9961A"></i>0.15</span>
+        <span><i class="ln" style="border-color:#3B3833"></i>separatrices of the map (white on the energy view)</span>
+        <span><i class="ln dotted" style="border-color:#4A4A4A"></i>BTM separatrices, for comparison</span>
+        <span><i class="sw energy"></i>energy bands <i>E</i> = &minus;&phi;, &Delta;&phi; = &nabla;&middot;<i>J</i></span>
+        <span>colour = the atom a point ends at; hover the right panels to follow one flow line</span>
+      </div>
+    </div>
+  </div>
+  <p class="cap"><span class="lab">Animation 1</span> <b>From flows to maps, and why the current has to balance.</b> The same noise draws in every panel. <b>Left:</b> flow matching regresses <i>x</i><sub>1</sub> &minus; <i>x</i><sub>0</sub> on a field <i>b<sub>t</sub></i>(<i>x</i>) that depends on the flow time <i>t</i>, so sampling integrates a field that keeps changing as <i>t</i> runs from 0 to 1. <b>Centre:</b> the same regression over functions of <i>x</i> alone gives the autonomous field <i>b</i> = <i>J</i>/&nu;, the time-averaged probability flux over the occupation density, with &nabla;&middot;<i>J</i> = &mu;<sub>0</sub> &minus; &mu;<sub>1</sub>: noise is a source, data a sink. Its flow lines never change. The coloured basins are the one-step map <i>T</i>, which is constant along every flow line (<i>J</i>&middot;&nabla;<i>T</i> = 0, the conservation law BTM trains on), and each basin carries the mass of its atom. <b>Right:</b> Equilibrium Matching fits the same time-independent field, but to the target <i>c<sub>t</sub></i>(<i>x</i><sub>1</sub> &minus; <i>x</i><sub>0</sub>) with a schedule <i>c<sub>t</sub></i> = (1 &minus; <i>t</i>)<sup>&kappa;</sup> that vanishes at the data, so that the field stops there and can be read as the gradient of an implicit energy whose minima are the data points; sampling descends it for as long as it takes. The landscape behind the flow is the Coulomb energy of that current, <i>E</i> = &minus;&phi; with &Delta;&phi; = &nabla;&middot;<i>J</i>: a hill where the noise sits, wells at the data, flat far away. At &kappa; = 0 the charge is exactly &mu;<sub>0</sub> &minus; &mu;<sub>1</sub>, the Beckmann balance, and the wells are the point sinks at the atoms. The BTM paper shows that the EqM loss coincides with the autonomous one only for <i>c<sub>t</sub></i> &equiv; 1 (&kappa; = 0): for any other schedule the target is no longer the velocity of the interpolant, and by the continuity equation the sink becomes &kappa;&int;(1 &minus; <i>t</i>)<sup>&kappa;&minus;1</sup>&rho;<sub><i>t</i></sub> d<i>t</i>, a unit charge smeared back along the interpolation paths instead of the data points. The wells widen and flatten, the balance &nabla;&middot;<i>J</i> = &mu;<sub>0</sub> &minus; &mu;<sub>1</sub> is lost, and the flow still reaches the atoms but with the wrong weights. Move the slider: the separatrices of the EqM map (white) drift away from BTM&rsquo;s (dotted), its basins, tinted on the landscape, grow for the heaviest atoms at the expense of the lightest, and the mean error of the basin masses rises from 0.001 at &kappa; = 0 (the resolution of the grid) to 0.054 at &kappa; = 0.8, the schedule of Figure 3 in the BTM paper, where the lightest atom keeps 0.03 of the noise instead of 0.10. BTM learns the balanced current and reads the endpoint off in one call.</p>
+
+  <div class="figbox">
+    <div class="numbers">
+      <div class="number">
+        <div class="metric">1.61</div>
+        <div class="label">one-step FID, ImageNet 256&times;256</div>
+        <div class="detail">1 NFE, no teacher, no feature network</div>
+      </div>
+      <div class="number">
+        <div class="metric">9.3 vs 51</div>
+        <div class="label">FID at 100 epochs, SBM vs BTM</div>
+        <div class="detail">same DiT-B/2, latent, data and sampler</div>
+      </div>
+      <div class="number">
+        <div class="metric">0.856</div>
+        <div class="label">GenEval, text-to-image</div>
+        <div class="detail">one network call; MiniT2I-L/16 0.883 with 200</div>
+      </div>
+      <div class="number">
+        <div class="metric">4.25 / 18.1</div>
+        <div class="label">FID / FVD, Bridge-V2 world model</div>
+        <div class="detail">DriftWorld 4.86 / 46.1 at 2.4&times; the compute</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Summary</h2>
+  <ol class="contrib">
+    <li><span class="lead sf">The problem.</span> Beckmann Transport Models learn a one-step map end-to-end from data, with no teacher, no second prediction head and no pretrained feature network, but they have lacked the two ingredients behind modern generators: a mature training recipe and classifier-free guidance. The original BTM reads a one-step FID of 17.6 on ImageNet 256, where recent one-step generators are below 2. CFG combines conditional and unconditional velocity or score predictions, and a map has neither.</li>
+    <li><span class="lead sf">Guidance and a training recipe for one-step maps.</span> We guide the map <em>during training</em> with its own conditional and null predictions. The BTM current is a positive multiple of an autonomous denoising field, to which CFG applies as it does to a velocity; substituting the map&rsquo;s predictions for the denoisers needs no additional network and keeps sampling at one network evaluation. A recipe for training at scale comes with it.</li>
+    <li><span class="lead sf">Theoretical interpretation and guarantees.</span> We derive the guidance rule through the autonomous denoising interpretation of BTM and characterize the bias of substituting map predictions for denoisers. For the idealized population objective the guided stopped update is consistent with a guided conservation equation, and a two-mode construction shows how guidance moves basin boundaries and raises the probability of the modes a condition favours.</li>
+    <li><span class="lead sf">Performant one-step generation across tasks.</span> SBM-XL, trained from scratch in the latent of a representation autoencoder, reaches a one-step FID of 1.61 on ImageNet 256&times;256 without a teacher or a feature loss, the lowest we know of for a feature-free one-step model at any budget. In text-to-image generation SBM reaches a GenEval score of 0.856 with one network evaluation. On BridgeData V2 and RT-1 the world models use neither guidance nor a feature loss and beat every reported baseline on all five metrics, with 2.4 to 5.4&times; less training compute than DriftWorld.</li>
+  </ol>
+
+  <h2>How SBM guides a one-step map</h2>
+  <div class="anim" id="fig1-anim">
+    <div class="anim-panels three">
+      <div class="anim-panel">
+        <div class="anim-title">(a) One SBM training step</div>
+        <div class="anim-stage static"><img src="assets/fig1a.svg" alt="One SBM training step on the two-atom toy: the BTM transport direction, the conditional-null correction and the guided direction at the interpolant point" /></div>
+        <div class="anim-read">one pair (<i>x</i><sub>0</sub>, <i>x</i><sub>1</sub> = &minus;e<sub>1</sub>) at <i>S</i> = 0.3</div>
+      </div>
+      <div class="anim-panel">
+        <div class="anim-title">(b) BTM, &omega; = 1</div>
+        <div class="anim-stage"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+        <div class="anim-read"></div>
+      </div>
+      <div class="anim-panel">
+        <div class="anim-title" id="title-sbm">(c) SBM, &omega; = 2.00</div>
+        <div class="anim-stage"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+        <div class="anim-read"></div>
+      </div>
+    </div>
+    <div class="anim-controls">
+      <button type="button" id="play" class="btn btn-outline">Pause</button>
+      <label for="omega">guidance strength &omega; = <span id="omega-val">2.00</span></label>
+      <input type="range" id="omega" min="1" max="2.5" step="0.05" value="2" />
+      <div class="anim-legend">
+        <span><i class="sw" style="background:#1B8A6B"></i>sent to +e<sub>1</sub></span>
+        <span><i class="sw" style="background:#1769E0"></i>sent to &minus;e<sub>1</sub></span>
+        <span><i class="sw" style="background:#BB5078"></i>reassigned by guidance</span>
+        <span><i class="sw hatch"></i><i>T</i>(&middot;, <i>c</i>) &ne; <i>T</i>(&middot;, &empty;)</span>
+        <span><i class="ln" style="border-color:#4A4A4A"></i>BTM separatrix</span>
+        <span><i class="ln" style="border-color:#1B8A6B"></i>SBM separatrix</span>
+        <span><i class="ln dashed" style="border-color:#8F8E88"></i>null separatrix</span>
+      </div>
+    </div>
+  </div>
+  <p class="cap"><span class="lab">Figure 2</span> <b>How SBM guides a one-step map.</b> Gaussian noise in the plane, data at &plusmn;e<sub>1</sub>, class <i>c</i> with weights 0.8 / 0.2 and null with 0.5 / 0.5. Background colours show where the conditional map sends each noise point.
+    <b>(a)</b> One training step: a class-<i>c</i> pair whose data point is the minority mode gives the BTM transport direction (blue); where the conditional and null predictions disagree (hatched), the correction (1&nbsp;&minus;&nbsp;&omega;<sup>&minus;1</sup>)(<i>T</i>(<i>I<sub>S</sub></i>,&nbsp;<i>c</i>) &minus; <i>T</i>(<i>I<sub>S</sub></i>,&nbsp;&empty;)) tilts the direction toward the mode the condition favours (green).
+    <b>(b)</b> BTM, live: noise flows along the autonomous conditional current to the two data points, and the separatrix splits it 80 / 20, matching the class weights.
+    <b>(c)</b> SBM with &omega;&nbsp;&gt;&nbsp;1, live, same noise draws as (b): the current changes only where the maps disagree, between the SBM separatrix and the null separatrix, so the separatrix moves left and at &omega; = 2 about 86 % of the noise reaches +e<sub>1</sub>; both data points stay fixed. The noise that guidance reassigns is shaded green and drawn in magenta. Move the slider to change &omega;.</p>
+  <p>The target is pulled along the map's own conditional&ndash;null disagreement. At &omega;&nbsp;=&nbsp;1 the recipe is ordinary BTM, and either way sampling is one network call.</p>
+
+  <h2>Guidance for one-step Beckmann maps</h2>
+  <p>
+    A Beckmann transport model learns the endpoint map <i>T</i> of a time-independent current <i>J</i>: the map is constant along the flow lines of the current
+    (<i>J</i>&middot;&nabla;<i>T</i> = 0 off the data) and is the identity on the data manifold. BTM enforces this with a stop-gradient transport loss and a boundary loss.
+    Neither term ever shows the map what a wrong image for a given class looks like.
+  </p>
+
+  <div class="steps">
+    <div>
+      <p><span class="lead">The current is a denoising field.</span> With the linear interpolant <i>I<sub>S</sub></i>&nbsp;=&nbsp;(1&nbsp;&minus;&nbsp;<i>S</i>)<i>x</i><sub>0</sub>&nbsp;+&nbsp;<i>S x</i><sub>1</sub> and <i>S</i> uniform, the conditional current factors as <i>J<sub>c</sub></i>&nbsp;=&nbsp;<i>h<sub>c</sub></i>&nbsp;(<i>z&#773;<sub>c</sub></i>&nbsp;&minus;&nbsp;id) with <i>h<sub>c</sub></i>&nbsp;&gt;&nbsp;0, where <i>z&#773;<sub>c</sub></i> is a weighted posterior mean of the data: an autonomous denoiser. The current is a positive multiple of a denoising field, so CFG applies to it as it does to a velocity.</p>
+    </div>
+    <div>
+      <p><span class="lead">Implicit CFG on the maps.</span> Classifier-free guidance combines the conditional and null denoisers; in implicit form the guided denoiser is <i>z&#773;<sub>c</sub></i>&nbsp;+&nbsp;(1&nbsp;&minus;&nbsp;&omega;<sup>&minus;1</sup>)(<i>z&#773;<sub>c</sub><sup>&omega;</sup></i>&nbsp;&minus;&nbsp;<i>z&#773;</i><sub>&empty;</sub>). Substituting the map&rsquo;s guided and null endpoint predictions (<i>T</i>, <i>T</i><sub>&empty;</sub>) for the denoisers gives a guided transport direction. No additional denoiser is trained: both predictions come from one network through condition dropout.</p>
+    </div>
+    <div>
+      <p><span class="lead">BTM&rsquo;s stopped update.</span> Apply the BTM stop-gradient update to the guided direction, and the same correction to the clean regression target of the boundary loss. The current now depends on the map we seek, and we ask for a map that predicts the endpoint of its own current: self-consistency.</p>
+    </div>
+  </div>
+
+  <div class="box">
+    <p><span class="lead">Guided transport direction.</span></p>
+    <img class="eq tall" src="assets/eq/eq_direction.svg" alt="I-dot-S-omega equals I-dot-S plus (1 minus omega inverse) over (1 minus S) times (T(I_S) minus T_null(I_S))" />
+    <p>The factor 1&nbsp;&minus;&nbsp;&omega;<sup>&minus;1</sup> comes from implicit CFG, and 1 / (1&nbsp;&minus;&nbsp;<i>S</i>) converts endpoint displacements into interpolant velocities. The <span class="sage">green</span> term is the only change from BTM; for &omega;&nbsp;&gt;&nbsp;1 it follows the conditional&ndash;null disagreement at <i>I<sub>S</sub></i>, while the interpolation path is unchanged. With exact denoisers in place of the maps, the induced velocity is a positive rescaling of the autonomous CFG field; with the maps, the substitution error of the field is (1&nbsp;&minus;&nbsp;&omega;<sup>&minus;1</sup>)[(<i>T</i>&nbsp;&minus;&nbsp;<i>z&#773;<sub>c</sub><sup>&omega;</sup></i>)&nbsp;&minus;&nbsp;(<i>T</i><sub>&empty;</sub>&nbsp;&minus;&nbsp;<i>z&#773;</i><sub>&empty;</sub>)], a mismatch of the conditional&ndash;null contrasts in which the two individual errors can cancel. At fixed input and time the implicit correction preserves the conditional covariance of the BTM target, whereas the explicit guided target &omega;<i>I&#775;<sub>S</sub></i>&nbsp;&minus;&nbsp;(&omega;&nbsp;&minus;&nbsp;1)(<i>T</i><sub>&empty;</sub>(<i>I<sub>S</sub></i>)&nbsp;&minus;&nbsp;<i>I<sub>S</sub></i>)/(1&nbsp;&minus;&nbsp;<i>S</i>) scales it by &omega;<sup>2</sup>: at &omega;&nbsp;=&nbsp;5 its minibatch-gradient variance is 85 times larger and the map reads 66 against 21 FID at 20 epochs.</p>
+  </div>
+
+  <div class="box">
+    <p><span class="lead">Guided training losses.</span></p>
+    <div class="eq-row">
+      <img class="eq" src="assets/eq/eq_loss_tr.svg" alt="transport loss: expectation of the squared norm of T(I_S) minus the stopped target T(I_S) plus DT(I_S) times the guided direction" />
+      <img class="eq" src="assets/eq/eq_loss_bd.svg" alt="boundary loss: expectation of the squared norm of T(x_1) minus the stopped target x_1 plus (1 minus omega inverse)(T(x_1) minus T_null(x_1))" />
+      <img class="eq" src="assets/eq/eq_loss_total.svg" alt="total loss equals transport loss plus lambda times boundary loss" />
+    </div>
+    <p>The stop-gradient freezes the entire target in each term, including the guidance correction. At &omega;&nbsp;=&nbsp;1 both losses reduce to ordinary conditional BTM.</p>
+  </div>
+
+  <div class="box result">
+    <p><span class="lead">Theorem (consistency of the guided stopped update).</span> Let 1&nbsp;&le;&nbsp;&omega;&nbsp;&lt;&nbsp;&infin; and &lambda;&nbsp;&gt;&nbsp;0, let the class data lie on a smooth lower-dimensional manifold, and let the null map fix the data. Then the population stopped update of the guided losses vanishes against every smooth compactly supported perturbation exactly when the map satisfies the guided conservation equation</p>
+    <img class="eq" src="assets/eq/eq_conservation.svg" alt="DT times the guided current of T equals zero almost everywhere off the data manifold M, and T(z) equals z on the data" />
+    <p>so a stationary map predicts the endpoint of its own guided current. Sufficiently weak guidance admits a local self-consistent endpoint map near the data manifold, close to the ordinary conditional BTM map, and the guided equations permit a stronger preference for a condition-favoured mode while keeping the data support (Figure 2). The theorem characterizes the idealized population update with a clean boundary loss; it does not establish uniqueness of the guided map or convergence of network training.</p>
+  </div>
+
+  <div class="box">
+    <p><span class="lead">Noisy boundary supervision.</span> In practice the conditional and null maps are branches of one network <i>T<sub>&theta;</sub></i>(<i>x</i>, <i>c</i>, &gamma;) trained with condition dropout, and the boundary loss evaluates the map at a noisy input <i>I</i><sub>&gamma;</sub>&nbsp;=&nbsp;(1&nbsp;&minus;&nbsp;&gamma;)<i>x</i><sub>0</sub>&nbsp;+&nbsp;&gamma;<i>x</i><sub>1</sub> while keeping <i>x</i><sub>1</sub> as the clean target; &gamma; is the boundary level and also a network input. Its boundary-only fixed point is guided denoising supervision with the null branch as reference:</p>
+    <img class="eq" src="assets/eq/eq_fixed_point.svg" alt="T(x) equals omega times the conditional expectation of x_1 given I_gamma equals x, minus (omega minus 1) times T_null(x)" />
+    <p>So at &gamma;&nbsp;=&nbsp;<i>s</i> the map acts as a guided denoiser of <i>I<sub>s</sub></i>, and at a fixed read level &gamma;<sub>read</sub> it predicts the flow endpoint from pure noise, which is how it samples: <i>x</i>&nbsp;=&nbsp;<i>T<sub>&theta;</sub></i>(<i>x</i><sub>0</sub>, <i>c</i>, &gamma;<sub>read</sub>).</p>
+  </div>
+
+  <div class="algo">
+    <div class="algo-head">Algorithm 1 <span>Simple SBM training (&omega; = 1 is BTM)</span></div>
+<pre>for each training step:
+    draw x0 ~ N(0, I),  (x1, c) ~ data,  S ~ U(0, 1);  replace c by &empty; with a fixed probability
+    I_S = (1 - S) x0 + S x1
+    v   = x1 - x0 + (1 - 1/&omega;) / (1 - S) * (T(I_S, c) - T(I_S, &empty;))          # guided direction
+    L_tr = | T(I_S, c) - sg[ T(I_S, c) + DT(I_S, c) v ] |^2
+    L_bd = | T(x1, c)  - sg[ x1 + (1 - 1/&omega;) (T(x1, c) - T(x1, &empty;)) ] |^2
+    &theta; &larr; &theta; - &eta; &nabla;&theta; ( L_tr + &lambda; L_bd )
+
+sample:  x = T(x0, c)                                               # one network call, no guidance</pre>
+  </div>
+  <p>The full recipe (Algorithm 2 in the paper) adds the boundary level &gamma;, a frozen copy of the network for the stopped targets, a per-row normalization of the transport loss, an adaptive gradient balancer and a mixture of transport times; Figure 8 shows what each of these is worth.</p>
+
+  <h2>SBM versus native BTM</h2>
+  <p>Same transformer, same SD-VAE latent, same data, same single network call at sampling time. Only the training recipe differs.</p>
+  <figure class="fig">
+    <img src="assets/fig2_btm_vs_sbm.png" alt="Four panels: FID against training compute for BTM and SBM at base size; per-class separation of generated versus real class means; histogram of within-class spread ratios; precision-recall curves against the read-time label scale" loading="lazy" decoding="async" />
+    <figcaption class="cap">
+      <span class="lab">Figure 3</span> <b>Comparison with BTM.</b> <b>Left:</b> from scratch at DiT-B/2 size, SBM reads at ten epochs what BTM has not reached after a hundred; the two end at 9.3 and 51 after 100 epochs. An SBM update costs 1.6 BTM updates, so on the compute axis the gap shrinks by that factor and no more.
+      <b>Centre left:</b> per class, the distance of the generated class mean from the grand mean against the same distance for real images. BTM's class means sit too close together (slope 0.80, cosine 0.83); SBM's lie on the identity (0.97, cosine 0.92).
+      <b>Centre right:</b> the ratio of generated to real within-class standard deviation: BTM's classes are too wide (mean 1.19), SBM's are matched (1.00).
+      <b>Right:</b> precision and recall as the read-time label scale &kappa; moves from 0.8 to 2: with <i>e</i><sub>&empty;</sub> the null-class embedding, every class embedding is extrapolated to <i>e<sub>c</sub></i>&nbsp;&larr;&nbsp;<i>e</i><sub>&empty;</sub>&nbsp;+&nbsp;&kappa;(<i>e<sub>c</sub></i>&nbsp;&minus;&nbsp;<i>e</i><sub>&empty;</sub>), so &kappa;&nbsp;&gt;&nbsp;1 plays the role of a CFG scale inside one evaluation. SBM&rsquo;s curve lies above BTM&rsquo;s at every recall; its best read, FID 3.5 at &kappa;&nbsp;=&nbsp;1.2, is three times lower than the best BTM read of the same network.
+    </figcaption>
+  </figure>
+  <figure class="fig">
+    <img src="assets/fig3_btm_vs_sbm_samples.jpg" alt="Two rows of five images, daisy, lion, bald eagle, bubble and pirate ship, generated by BTM (top) and SBM (bottom)" loading="lazy" decoding="async" />
+    <figcaption class="cap"><span class="lab">Figure 4</span> <b>Qualitative comparison between BTM and SBM.</b> For each of the classes daisy, lion, bald eagle, bubble and pirate ship, the best-looking of 50 samples from each model.</figcaption>
+  </figure>
+
+  <h2>ImageNet 256&times;256</h2>
+  <p>Class-conditional one-step maps in two latent spaces: the SD-VAE latent, and the latent of a representation autoencoder (RAE), a frozen DINOv2 encoder with a trained decoder, using the RAE paper&rsquo;s DiT<sup>DH</sup> transformer at base and XL size (SBM-B, SBM-XL). Every SBM model is trained from scratch at batch 256 with the full recipe and samples with a single network evaluation. We report FID-50k against the ADM training-set reference and the FDr5 of Park et al. (2026), the mean of five Fr&eacute;chet distances (Inception, DINOv2-L, MAE-L, SigLIP2, CLIP-L), each divided by its value for the validation set, so that the validation set scores 1.</p>
+  <figure class="fig">
+    <img src="assets/fig4_imagenet.png" alt="Three panels: FID against training compute during pretraining at base size; final one-step FID against training compute for published models; FDr5 against FID" loading="lazy" decoding="async" />
+    <figcaption class="cap">
+      <span class="lab">Figure 5</span> <b>Left:</b> pretraining at base size on the same data, the baselines run from their released code and every checkpoint scored with the same FID implementation. SBM-B is ahead of every baseline at every epoch and every FLOP budget, and passes the FID of 17.6 that BTM-XL/2 reached after 1,280 epochs within its first ten epochs; the dashed curve is SBM-B/2 trained from scratch in SD-VAE latents, which keeps pace with MeanFlow and Drifting.
+      <b>Centre:</b> final one-step FID against training compute; SBM-B and SBM-XL lie on the compute&ndash;FID Pareto front. SBM-XL reaches 1.61 after 800 EFLOP, where iMF-XL/2 reports 1.72 after 3,200 EFLOP; the models that train with pretrained features reach lower FID with more compute (Drifting-L/2 1.54 at 2,000 EFLOP, W-Flow-XL/2 1.33 at 3,700), not counting the compute of their feature networks.
+      <b>Right:</b> FDr5 against FID. SBM-XL scores 7.1, below iMF-XL/2, pMF-H, W-Flow-XL/2 and Drifting-L, and its loss uses none of the five evaluation encoders; its Inception component is at the level of the validation set, while the semantic encoders still measure a 5 to 12 times larger distance. On the six-encoder FDr6 it reads 6.2 against 8.4 for iMF-XL/2 and 10.5 for Drifting-L.
+    </figcaption>
+  </figure>
+
+  <p class="cap above"><span class="lab">Table 1</span> <b>System-level comparison on ImageNet 256&times;256.</b> Params: generator + autoencoder decoder. Auxiliary: an additional network used in training, either a velocity branch or a pretrained feature encoder. Guidance: CFG on velocity predictions (at inference for the multistep models, in the training target for the one-step ones), or guidance built from data without a velocity (feature-space repulsion in Drifting, the conditional&ndash;null map correction in SBM). SBM-XL/2 (SD-VAE) is the BTM checkpoint finetuned with the SBM recipe; the RAE models are trained from scratch. SBM numbers are one sampling seed; IS on the same 50k samples as the FID (10 splits).</p>
+  <div class="table-wrap">
+    <table class="results">
+      <thead>
+        <tr>
+          <th>method</th><th>space</th><th>params</th><th>auxiliary</th><th>guidance</th><th class="num">NFE</th><th class="num">FID &darr;</th><th class="num">IS &uarr;</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="group"><td colspan="8">Multistep diffusion / flows</td></tr>
+        <tr><td>SiT-XL/2</td><td>SD-VAE</td><td>675M + 49M</td><td class="dash">&ndash;</td><td class="dash">&ndash;</td><td class="num">250</td><td class="num">8.30</td><td class="num dash">&ndash;</td></tr>
+        <tr><td>SiT-XL/2</td><td>SD-VAE</td><td>675M + 49M</td><td class="dash">&ndash;</td><td>Velocity</td><td class="num">2 &times; 250</td><td class="num">2.06</td><td class="num">270.3</td></tr>
+        <tr><td>RAE + DiT<sup>DH</sup>-XL/2</td><td>RAE</td><td>839M + 415M</td><td class="dash">&ndash;</td><td>Velocity</td><td class="num">2 &times; 50</td><td class="num">1.13</td><td class="num">262.6</td></tr>
+        <tr class="group"><td colspan="8">One-step diffusion / flows</td></tr>
+        <tr><td>Shortcut XL/2</td><td>SD-VAE</td><td>675M + 49M</td><td class="dash">&ndash;</td><td>Velocity</td><td class="num">1</td><td class="num">10.60</td><td class="num dash">&ndash;</td></tr>
+        <tr><td>MeanFlow XL/2</td><td>SD-VAE</td><td>676M + 49M</td><td class="dash">&ndash;</td><td>Velocity</td><td class="num">1</td><td class="num">3.43</td><td class="num dash">&ndash;</td></tr>
+        <tr><td>iMF XL/2</td><td>SD-VAE</td><td>610M + 49M</td><td>Velocity (101M)</td><td>Velocity</td><td class="num">1</td><td class="num">1.72</td><td class="num">282.0</td></tr>
+        <tr><td>pMF-H/16</td><td>pixel</td><td>956M</td><td>LPIPS + ConvNeXt-V2</td><td>Velocity</td><td class="num">1</td><td class="num">2.22</td><td class="num">268.8</td></tr>
+        <tr class="group"><td colspan="8">One-step pushforward</td></tr>
+        <tr><td>Drifting L/2</td><td>SD-VAE</td><td>463M + 49M</td><td>MAE-640 (2.13B)</td><td>Data</td><td class="num">1</td><td class="num">1.54</td><td class="num">258.9</td></tr>
+        <tr><td>BTM XL/2</td><td>SD-VAE</td><td class="dash">&ndash;</td><td class="dash">&ndash;</td><td class="dash">&ndash;</td><td class="num">1</td><td class="num">17.58</td><td class="num dash">&ndash;</td></tr>
+        <tr class="ours"><td>SBM-XL/2 (SD-VAE)</td><td>SD-VAE</td><td>675M + 49M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">3.5</td><td class="num dash">&ndash;</td></tr>
+        <tr class="ours"><td>SBM-B (RAE)</td><td>RAE</td><td>118M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">2.79</td><td class="num dash">&ndash;</td></tr>
+        <tr class="ours"><td>SBM-XL (RAE)</td><td>RAE</td><td>669M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">1.61</td><td class="num">256.5</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Generated samples</h2>
+  <p>Class-conditional ImageNet 256&times;256 samples from SBM-XL (RAE), one network call each, FID 1.61. Curated: one draw chosen out of 50 per class.</p>
+  <div class="sample-grid">
+    <figure><img src="assets/samples/096_toucan_05.jpg" alt="toucan" loading="lazy" decoding="async" /><figcaption>toucan</figcaption></figure>
+    <figure><img src="assets/samples/090_lorikeet_24.jpg" alt="lorikeet" loading="lazy" decoding="async" /><figcaption>lorikeet</figcaption></figure>
+    <figure><img src="assets/samples/084_peacock_25.jpg" alt="peacock" loading="lazy" decoding="async" /><figcaption>peacock</figcaption></figure>
+    <figure><img src="assets/samples/088_macaw_05.jpg" alt="macaw" loading="lazy" decoding="async" /><figcaption>macaw</figcaption></figure>
+    <figure><img src="assets/samples/145_king_penguin_29.jpg" alt="king penguin" loading="lazy" decoding="async" /><figcaption>king penguin</figcaption></figure>
+    <figure><img src="assets/samples/207_golden_retriever_44.jpg" alt="golden retriever" loading="lazy" decoding="async" /><figcaption>golden retriever</figcaption></figure>
+    <figure><img src="assets/samples/250_Siberian_husky_45.jpg" alt="Siberian husky" loading="lazy" decoding="async" /><figcaption>Siberian husky</figcaption></figure>
+    <figure><img src="assets/samples/279_Arctic_fox_08.jpg" alt="Arctic fox" loading="lazy" decoding="async" /><figcaption>Arctic fox</figcaption></figure>
+    <figure><img src="assets/samples/277_red_fox_32.jpg" alt="red fox" loading="lazy" decoding="async" /><figcaption>red fox</figcaption></figure>
+    <figure><img src="assets/samples/269_timber_wolf_36.jpg" alt="timber wolf" loading="lazy" decoding="async" /><figcaption>timber wolf</figcaption></figure>
+    <figure><img src="assets/samples/388_giant_panda_33.jpg" alt="giant panda" loading="lazy" decoding="async" /><figcaption>giant panda</figcaption></figure>
+    <figure><img src="assets/samples/289_snow_leopard_30.jpg" alt="snow leopard" loading="lazy" decoding="async" /><figcaption>snow leopard</figcaption></figure>
+  </div>
+
+  <h2>Text-to-image</h2>
+  <p>SBM-B and SBM-XL are trained from scratch on the training data of MiniT2I (Wang et al., 2026), with its schedule and its frozen FLAN-T5-Large text encoder, and evaluated on GenEval with one map evaluation and one decoder call per image. The maps act in the latent of a frozen DINOv2-S encoder and are decoded at 256&nbsp;px, whereas the baselines are pixel-space systems at 512&nbsp;px, with compute as estimated by the MiniT2I authors.</p>
+  <p>With a single network evaluation, SBM comes within a few GenEval points of multi-step flow models trained on the same data, at about one hundredth of their sampling cost. SBM-XL reaches 0.856 and SBM-B 0.833, at 0.57 and 0.33 TFLOP per image. At matched training compute this is around 0.03 below the 100-step MiniT2I-B/16 and L/16 models, which use 200 network evaluations per image and 140 and 470 times the inference compute of SBM-XL. The four-step MeanFlow distillation of MiniT2I-B/16 scores 0.842, between the two SBM models, but costs 2.9 times the inference compute of SBM-XL and 4.9 times that of SBM-B, and needs a separate distillation stage. Both SBM models also score above the other pixel-space systems except DeCo. Figure 1 shows uncurated samples next to MiniT2I-L/16.</p>
+  <div class="two-tables">
+    <div>
+      <p class="cap above"><span class="lab">Table 2</span> <b>GenEval</b> against training compute and network evaluations per image (NFE, including CFG). Baselines as estimated by Wang et al. (2026); &dagger; teacher plus our distillation estimate. Ours: one map evaluation and one decoder call.</p>
+      <div class="table-wrap">
+        <table class="results">
+          <thead><tr><th>model</th><th class="num">compute (ZFLOP) &darr;</th><th class="num">NFE &darr;</th><th class="num">GenEval &uarr;</th></tr></thead>
+          <tbody>
+            <tr><td>MiniT2I-B/32</td><td class="num">0.13</td><td class="num">200</td><td class="num">0.826</td></tr>
+            <tr><td>MiniT2I-B/16</td><td class="num">0.36</td><td class="num">200</td><td class="num">0.873</td></tr>
+            <tr><td>MiniT2I-L/16</td><td class="num">1.19</td><td class="num">200</td><td class="num">0.883</td></tr>
+            <tr><td>DeCo-XXL/16</td><td class="num">0.80</td><td class="num">50</td><td class="num">0.86</td></tr>
+            <tr><td>PixelGen-XXL/16</td><td class="num">0.80</td><td class="num">50</td><td class="num">0.79</td></tr>
+            <tr><td>PixNerd-XXL/16</td><td class="num">0.73</td><td class="num">50</td><td class="num">0.73</td></tr>
+            <tr><td>PixelDiT-T2I</td><td class="num">3.17</td><td class="num">50</td><td class="num">0.78</td></tr>
+            <tr><td>MiniT2I-B/16-MF</td><td class="num">0.49&dagger;</td><td class="num">4</td><td class="num">0.842</td></tr>
+            <tr class="ours"><td>SBM-B</td><td class="num">0.35</td><td class="num">1</td><td class="num">0.833</td></tr>
+            <tr class="ours"><td>SBM-XL</td><td class="num">1.15</td><td class="num">1</td><td class="num">0.856</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <figure class="fig" style="margin-top:0">
+        <img src="assets/fig6_geneval.png" alt="GenEval against inference compute per image and against training compute: SBM-B and SBM-XL are the only one-step points" loading="lazy" decoding="async" />
+        <figcaption class="cap"><span class="lab">Figure 6</span> <b>GenEval against compute.</b> SBM is the only one-step method and B/16-MF (4 steps) the only other few-step method; the rest use at least 50 NFEs. Left: against inference compute per image. Right: against training compute.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <h2>Try it</h2>
+  <p>The SBM-XL text-to-image map, live: type a prompt and the map returns eight images, one network evaluation each, from the Space on Hugging Face ZeroGPU. The first request after idle time wakes the Space, which takes about a minute; later ones return in about a second. Full-sentence prompts work best. Without a Hugging Face account the GPU allows a few runs a day per address; for more, open the demo on <a href="https://huggingface.co/spaces/tullebulle/sbm-t2i">Hugging Face</a> and sign in. Eight fixed seeds for twelve prompts, with nothing selected, are in the <a href="seeds/">seed gallery</a>.</p>
+  <div class="demo" id="t2i-demo">
+    <form class="demo-form" id="t2i-form">
+      <label class="demo-prompt"><span class="lab">Prompt</span><textarea id="t2i-prompt" rows="2" placeholder="a red fox standing in a snowy forest" maxlength="400"></textarea></label>
+      <div class="demo-controls">
+        <label class="demo-seed"><span class="lab">Seed</span><input id="t2i-seed" type="number" min="0" max="2147483647" step="1" placeholder="random"></label>
+        <button type="submit" class="btn" id="t2i-go">Generate 8 images</button>
+        <span class="demo-status" id="t2i-status" aria-live="polite"></span>
+      </div>
+    </form>
+    <div class="demo-examples" id="t2i-examples" aria-label="Example prompts"></div>
+    <div class="demo-strip" id="t2i-strip"></div>
+    <p class="cap">The map runs on <a href="https://huggingface.co/spaces/tullebulle/sbm-t2i">huggingface.co/spaces/tullebulle/sbm-t2i</a>, where the Space&rsquo;s own interface is available too. Images open full size in a new tab.</p>
+  </div>
+
+  <h2>World modelling</h2>
+  <p>Action-conditioned next-frame prediction on BridgeData V2 and RT-1 under DriftWorld&rsquo;s protocol (256&times;256, validation split): given four frames and their actions, the map samples the next frame with one network evaluation, and longer videos are generated autoregressively in chunks of eight frames with the history reset to the ground truth at the start of each chunk. Frames live in the SD3 autoencoder latent. All SBM world models use &omega;&nbsp;=&nbsp;1 and no auxiliary feature loss: the recipe alone does the work. Baseline rows are taken from DriftWorld&rsquo;s Table IV; compute is the training compute of the generator in EFLOP, NFE the number of network evaluations per generation call, and inference time is per generated frame on one GPU (baselines H100 as reported; SBM H200, batch 1, bf16).</p>
+  <p>On Bridge-V2, SBM beats DriftWorld on all five metrics at 2.4&times; less training compute, and without the DINOv3 feature encoder that DriftWorld&rsquo;s own ablation finds essential. On RT-1 the short run passes DriftWorld on all five metrics at 5.4&times; less compute, and the long run at 43.4 EFLOP is past every published entry of the table. The FVD values are 2.5&times; to 3.9&times; below DriftWorld&rsquo;s: past the scored eight frames, with the model fed its own frames, DriftWorld&rsquo;s arm dissolves within about ten frames while the SBM rollout keeps the arm solid and completes the task (Figure 7).</p>
+  <div class="two-tables">
+    <div>
+      <p class="cap above"><span class="lab">Table 3</span> <b>Bridge-V2</b> next-frame prediction.</p>
+      <div class="table-wrap">
+        <table class="results">
+          <thead><tr><th>model</th><th class="num">EFLOP</th><th class="num">SSIM &uarr;</th><th class="num">PSNR &uarr;</th><th class="num">LPIPS &darr;</th><th class="num">FID &darr;</th><th class="num">FVD &darr;</th><th class="num">NFE</th></tr></thead>
+          <tbody>
+            <tr><td>IRASim</td><td class="num dash">&ndash;</td><td class="num">0.738</td><td class="num">18.84</td><td class="num">0.158</td><td class="num">10.46</td><td class="num">91.55</td><td class="num">59</td></tr>
+            <tr><td>IWS</td><td class="num dash">&ndash;</td><td class="num">0.786</td><td class="num">22.85</td><td class="num">0.169</td><td class="num">45.30</td><td class="num">329.75</td><td class="num">4</td></tr>
+            <tr><td>LVDM</td><td class="num dash">&ndash;</td><td class="num">0.741</td><td class="num">19.19</td><td class="num">0.154</td><td class="num">9.86</td><td class="num">103.51</td><td class="num">59</td></tr>
+            <tr><td>VDM</td><td class="num dash">&ndash;</td><td class="num">0.725</td><td class="num">18.42</td><td class="num">0.167</td><td class="num">39.88</td><td class="num">159.16</td><td class="num">59</td></tr>
+            <tr><td>DriftWorld</td><td class="num">37.05</td><td class="num">0.835</td><td class="num">22.69</td><td class="num">0.091</td><td class="num">4.86</td><td class="num">46.05</td><td class="num">1</td></tr>
+            <tr class="ours"><td>SBM</td><td class="num">15.6</td><td class="num">0.869</td><td class="num">24.80</td><td class="num">0.060</td><td class="num">4.25</td><td class="num">18.1</td><td class="num">1</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <p class="cap above"><span class="lab">Table 4</span> <b>RT-1</b> world modelling.</p>
+      <div class="table-wrap">
+        <table class="results">
+          <thead><tr><th>model</th><th class="num">EFLOP</th><th class="num">SSIM &uarr;</th><th class="num">PSNR &uarr;</th><th class="num">LPIPS &darr;</th><th class="num">FID &darr;</th><th class="num">FVD &darr;</th><th class="num">NFE</th><th class="num">s / frame &darr;</th></tr></thead>
+          <tbody>
+            <tr><td>IRASim</td><td class="num dash">&ndash;</td><td class="num">0.757</td><td class="num">21.05</td><td class="num">0.151</td><td class="num">4.60</td><td class="num">93.0</td><td class="num">59</td><td class="num">1.104</td></tr>
+            <tr><td>IWS</td><td class="num dash">&ndash;</td><td class="num">0.807</td><td class="num">24.29</td><td class="num">0.167</td><td class="num">46.81</td><td class="num">448.2</td><td class="num">4</td><td class="num">0.023</td></tr>
+            <tr><td>LVDM</td><td class="num dash">&ndash;</td><td class="num">0.750</td><td class="num">21.00</td><td class="num">0.153</td><td class="num">5.40</td><td class="num">94.6</td><td class="num">59</td><td class="num">0.284</td></tr>
+            <tr><td>VDM</td><td class="num dash">&ndash;</td><td class="num">0.540</td><td class="num">13.82</td><td class="num">0.246</td><td class="num">31.68</td><td class="num">406.1</td><td class="num">59</td><td class="num">3.153</td></tr>
+            <tr><td>DriftWorld</td><td class="num">30.7</td><td class="num">0.841</td><td class="num">24.20</td><td class="num">0.097</td><td class="num">8.99</td><td class="num">62.8</td><td class="num">1</td><td class="num">0.019</td></tr>
+            <tr class="ours"><td>SBM (short run)</td><td class="num">5.7</td><td class="num">0.864</td><td class="num">25.61</td><td class="num">0.071</td><td class="num">7.70</td><td class="num">28.3</td><td class="num">1</td><td class="num">0.014</td></tr>
+            <tr class="ours"><td>SBM (long run)</td><td class="num">43.4</td><td class="num">0.880</td><td class="num">26.90</td><td class="num">0.057</td><td class="num">4.02</td><td class="num">16.1</td><td class="num">1</td><td class="num">0.014</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <figure class="fig medium">
+    <img src="assets/fig5_world_models.jpg" alt="Rollouts on Bridge-V2 and RT-1: ground truth, DriftWorld and SBM frames over time" loading="lazy" decoding="async" />
+    <figcaption class="cap"><span class="lab">Figure 7</span> <b>Rollouts</b> on Bridge-V2 (left) and RT-1 (right; DriftWorld has no RT-1 model). The first column is the last context frame. Left of the divider are the eight scored frames; right of it, the rollout continues from the model&rsquo;s own frames without resetting to the ground truth. DriftWorld&rsquo;s arm dissolves; SBM keeps the arm and scene intact.</figcaption>
+  </figure>
+
+  <h2>Ablations: from BTM to SBM</h2>
+  <p>Figure 8 shows what each part of the recipe is worth, at base size and 20 epochs, for DiT-B/2 maps trained from scratch in the SD-VAE latent. The BTM configuration we started from reads an FID of 75.6. Four changes that do not involve guidance bring it to 46.7, the native BTM of Figure 3: a smaller batch, a late transport-time distribution, the ADM latent preprocessing and the learning-rate drop of the native recipe. Guidance is the change that matters most: the guided targets, together with the smoothed gradient balancer, take the map from 46.7 to 20.7 at the same epoch budget and to 25.9 at the same FLOP budget. The unguided changes that come with the recipe net to zero. Without the per-row normalization of the transport loss the map reads worse than native BTM; removing any other component costs less than eight points.</p>
+  <figure class="fig">
+    <img src="assets/fig7_ablations.png" alt="Left: FID at 20 epochs as each recipe change is added, from the original BTM configuration at 75.6 to SBM at 20.7. Right: the FID change when each component is removed from the full recipe" loading="lazy" decoding="async" />
+    <figcaption class="cap"><span class="lab">Figure 8</span> <b>From BTM to SBM.</b> One-step FID-50k after 20 epochs for DiT-B/2 maps trained from scratch in the SD-VAE latent (one seed). Left: each row adds one change to the row above, from the BTM configuration we started from to SBM; the hollow marker reads the SBM run at equal compute. Right: change in FID when one component is removed from the full recipe; a positive value means the component helps.</figcaption>
+  </figure>
+  <figure class="fig medium">
+    <img src="assets/fig8_fid_is.png" alt="FID against Inception Score for SBM-XL as the read-time label scale runs from 1 to 2; FID is lowest at 1.35" loading="lazy" decoding="async" style="max-width:520px;display:block;margin:0 auto" />
+    <figcaption class="cap"><span class="lab">Figure 9</span> <b>Fidelity against diversity.</b> FID against Inception Score for SBM-XL as the read-time label scale &kappa; runs from 1 to 2, an inference-time knob that trades fidelity for class-typicality. The Inception Score rises throughout, while FID falls to its minimum of 1.61 at &kappa;&nbsp;=&nbsp;1.35 before it climbs.</figcaption>
+  </figure>
+
+  <h2>Resources</h2>
+  <div class="resources">
+    <div>
+      <p><span class="lead">Paper.</span> Method, theory (consistency, local existence, reweighting) and the ImageNet, text-to-image and world-model experiments.</p>
+      <div class="links"><a class="btn btn-outline" href="#" aria-disabled="true" title="Link coming soon">arXiv (soon)</a></div>
+    </div>
+    <div>
+      <p><span class="lead">Code.</span> Training and evaluation code for SBM at base and XL size; &omega; = 1 recovers BTM.</p>
+      <div class="links"><a class="btn btn-outline" href="#" aria-disabled="true" title="Link coming soon">GitHub (soon)</a></div>
+    </div>
+    <div>
+      <p><span class="lead">Weights.</span> The SBM-XL (RAE) ImageNet map and the Bridge-V2 and RT-1 world models.</p>
+      <div class="links"><a class="btn btn-outline" href="#" aria-disabled="true" title="Link coming soon">Checkpoints (soon)</a></div>
+    </div>
+  </div>
+
+  <h2>Citation</h2>
+<pre class="bib">@article{unneberg2026sbm,
+  title   = {Scalable Beckmann Maps improve one-step generation},
+  author  = {Unneberg, Ulrik and Wang, Shiyi and Lee, Cheuk-Kit and Berg, Felix and Kozinsky, Boris and Du, Yilun and Albergo, Michael and Vanden-Eijnden, Eric},
+  journal = {arXiv preprint},
+  year    = {2026}
+}</pre>
+
+  <footer>
+    <p><a href="/">Ulrik Unneberg</a> &middot; Harvard University &middot; 2026</p>
+  </footer>
+
+</main>
+<script src="assets/btm_fields.js"></script>
+<script src="assets/btm_anim.js"></script>
+<script src="assets/fig1_fields.js"></script>
+<script src="assets/fig1_anim.js"></script>
+<script src="assets/t2i_demo.js"></script>
+</body>
+</html>
