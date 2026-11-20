@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Beckmann maps, from the ground up</title>
+  <meta name="description" content="A scrolling tutorial on one-step generation: from straight lines between noise and data, through flow matching and autonomous flows, to a Beckmann map that lands on the data in a single network call." />
+  <link rel="stylesheet" href="../css/style.css?v=6" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css" />
+</head>
+<body>
+<div class="progress"><div id="progress"></div></div>
+<main class="page">
+
+  <header class="titlebox">
+    <p class="eyebrow">Tutorial</p>
+    <h1>Beckmann maps, from the ground up</h1>
+    <p class="tagline tut">From straight lines between noise and data to a generator that lands on the data in a single network call. Five pictures you can poke, and the equations behind each.</p>
+    <div class="links">
+      <a href="../" class="btn btn-outline">&larr; Project page</a>
+      <a href="https://colab.research.google.com/github/tullebulle/tullebulle.github.io/blob/main/projects/sbm/tutorial/beckmann_maps.ipynb" class="btn" target="_blank" rel="noopener">Notebook, open in Colab</a>
+      <a href="https://github.com/tullebulle/tullebulle.github.io/blob/main/projects/sbm/tutorial/beckmann_maps.ipynb" class="btn btn-outline" target="_blank" rel="noopener">Notebook on GitHub</a>
+    </div>
+    <p class="links-note">Beckmann maps and autonomous flows were introduced in Beckmann Transport Models (Lee et al., 2026), work by one of our authors; <a href="../">Scalable Beckmann Maps</a> takes the map to ImageNet and text-to-image. This page is the pitch for the whole idea; guidance, what the new paper adds, comes last.</p>
+  </header>
+
+  <section class="block reveal" id="goal">
+    <p class="eyebrow">0 &middot; The goal</p>
+    <h2>Learn the endpoint</h2>
+    <p class="prose">Flow and diffusion models make an image by integrating a differential equation: a network is called tens or hundreds of times, and each call moves the sample a little closer to the data. A Beckmann map is trained to output the <em>endpoint</em> of that journey directly, so a sample is one network call. This page builds the idea up on a toy in the plane where everything can be drawn. The toy has five data points with weights that sum to one; think of each as one image and of its weight as how often it appears. A perfect generator sends exactly that fraction of all noise onto that point, and nothing anywhere else.</p>
+    <p class="scroll-cue">Scroll to explore</p>
+  </section>
+
+  <section class="block reveal" id="pairs">
+    <p class="eyebrow">1 &middot; Noise to data</p>
+    <h2>Straight lines between noise and data</h2>
+    <p class="prose">Noise is cheap: a draw \(x_0 \sim \mu_0 = \mathcal N(0, I)\). Data \(x_1 \sim \mu_1\) is what we have examples of. A generator is a map \(T\) that turns one into the other,</p>
+    <div class="eqn">$$T_\#\mu_0 = \mu_1,$$</div>
+    <p class="prose">read &ldquo;push noise through \(T\) and you get data, with the right frequencies&rdquo;. Every method on this page starts from the same trick: pair each noise draw with an independent data draw and join them by a straight line,</p>
+    <div class="eqn">$$I_t = (1-t)\,x_0 + t\,x_1, \qquad \dot I_t = x_1 - x_0, \qquad t \in [0,1].$$</div>
+    <p class="prose">At \(t = 0\) the population of points \(I_t\) is the noise cloud; at \(t = 1\) it is the data. Write \(\rho_t\) for its density. The pairing itself is random and will never be learned. What every method reproduces, each in its own way, is the <em>population</em> sliding along these lines.</p>
+    <div class="anim" id="d-pairs">
+      <div class="anim-panels">
+        <div class="anim-panel">
+          <div class="anim-title">The interpolant \(I_t\) of 300 random pairs</div>
+          <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+          <div class="anim-read"></div>
+        </div>
+        <div class="anim-panel">
+          <div class="anim-controls" style="margin-top:0; flex-direction:column; align-items:flex-start; gap:12px">
+            <label>flow time <i>t</i> = <span class="tval">0.00</span></label>
+            <input type="range" min="0" max="1" step="0.01" value="0" />
+            <button type="button" class="btn btn-outline play">Play</button>
+            <button type="button" class="btn btn-outline repair">Re-pair the draws</button>
+            <div class="anim-legend" style="margin-left:0">
+              <span>colour = the data point a line ends at; faint lines show 70 of the pairings</span>
+              <span>&ldquo;Re-pair&rdquo; redraws the data partners: the lines change, the populations at <i>t</i> = 0 and <i>t</i> = 1 do not</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block reveal" id="fm">
+    <p class="eyebrow">2 &middot; Flow matching</p>
+    <h2>A velocity that changes with time</h2>
+    <p class="prose">Flow matching learns the average slope of the lines passing through each point at each time,</p>
+    <div class="eqn">$$b_t(x) = \mathbb E\big[\dot I_t \mid I_t = x\big] = \arg\min_{\hat b}\ \int_0^1 \mathbb E\,\big\|\hat b(I_t, t) - \dot I_t\big\|^2\,dt,$$</div>
+    <p class="prose">a regression with a network that takes the position <em>and the time</em>. The population is carried exactly by the ODE \(\dot X_t = b_t(X_t)\), so a sample is made by drawing \(X_0 \sim \mu_0\) and integrating from \(t = 0\) to \(1\), calling the network at every step. In the toy the regression has a closed form: given \(I_t = x\), the partner was \(z_j\) with posterior weight \(\propto p_j \exp\!\big(-|x - t z_j|^2/2(1-t)^2\big)\), and</p>
+    <div class="eqn">$$b_t(x) = \frac{\hat z_t(x) - x}{1-t}, \qquad \hat z_t(x) = \mathbb E[x_1 \mid I_t = x].$$</div>
+    <p class="prose">The velocity points from \(x\) toward the current best guess of the endpoint, a <em>denoiser</em> \(\hat z_t(x)\), with a speed that grows as time runs out. Early on the guess is vague and the field points to the middle; late on it has decided. Drag the slider and hover the field.</p>
+    <div class="anim" id="d-field">
+      <div class="anim-panels">
+        <div class="anim-panel">
+          <div class="anim-title">The field \(b_t(x)\), directions only</div>
+          <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+          <div class="anim-read"></div>
+        </div>
+        <div class="anim-panel">
+          <div class="anim-controls" style="margin-top:0; flex-direction:column; align-items:flex-start; gap:12px">
+            <label>flow time <i>t</i> = <span class="tval">0.00</span></label>
+            <input type="range" min="0" max="0.97" step="0.01" value="0" />
+            <div class="anim-legend" style="margin-left:0">
+              <span>hover: the arrow at <i>x</i> and the posterior mean <i>&#7825;<sub>t</sub></i>(<i>x</i>) it points at</span>
+              <span>at <i>t</i> = 0 the posterior is the prior, so <i>&#7825;</i><sub>0</sub> is the data mean for every <i>x</i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="prose">That last fact is the whole problem with few steps. One Euler step from \(t = 0\) is \(x_0 + b_0(x_0) = \hat z_0\), the data mean, for every \(x_0\): every sample lands on the same point, the famous blurry &ldquo;average image&rdquo;. Flow matching needs many steps because its field keeps changing as \(t\) runs, and the early steps commit to nothing. Section 5 shows this side by side with the map.</p>
+  </section>
+
+  <section class="block reveal" id="auto">
+    <p class="eyebrow">3 &middot; Autonomous flows</p>
+    <h2>The Beckmann current</h2>
+    <p class="prose">Beckmann Transport Models replace the time-dependent velocity by one field that does not depend on time. Average the flow-matching velocity over time, weighted by how much of the population is at \(x\) at each time:</p>
+    <div class="eqn">$$J(x) = \int_0^1 \rho_t(x)\,b_t(x)\,dt, \qquad \nu(x) = \int_0^1 \rho_t(x)\,dt, \qquad b(x) = \frac{J(x)}{\nu(x)}.$$</div>
+    <p class="prose">\(J\) is the <em>current</em>, the net flux of interpolants through \(x\); \(\nu\) is the <em>occupation measure</em>, \(\nu(x)\,dx\) being the expected time an interpolant spends in \(dx\); their ratio \(b\) is the average velocity of whatever passes through \(x\), whenever it passes. And \(b\) is the same regression as before with the time input removed:</p>
+    <div class="eqn">$$b = \arg\min_{\hat b}\ \mathbb E_{t,\,x_0,\,x_1}\big\|\hat b(I_t) - \dot I_t\big\|^2.$$</div>
+    <p class="prose">Integrating the continuity equation \(\partial_t\rho_t + \nabla\cdot(\rho_t b_t) = 0\) over \(t\) kills the time derivative except at the two ends, \(\rho_1 - \rho_0 = \mu_1 - \mu_0\), and leaves the flux constraint of Beckmann&rsquo;s 1952 transportation problem:</p>
+    <div class="eqn">$$\nabla\cdot J = \mu_0 - \mu_1 .$$</div>
+    <p class="prose">Noise is a source of current, data a sink. Now the part that matters. The ODE \(\dot X = b(X)\) is <em>autonomous</em>: through each point passes exactly one flow line, and flow lines never cross or bend back as \(t\) runs, because there is no \(t\). Every noise point has a single destination, and the plane splits into <em>basins</em>, one per data point. The flux constraint fixes their size: \(J\) is tangent to a basin&rsquo;s boundary, so no current crosses it, the integral of \(\nabla\cdot J\) over the basin vanishes, and</p>
+    <div class="eqn">$$\mu_0(B_j) = \mu_1(B_j) = p_j .$$</div>
+    <p class="prose">Each basin carries exactly the mass of its data point. That is the push-forward condition, drawn.</p>
+    <div class="anim" id="d-auto">
+      <div class="anim-panels">
+        <div class="anim-panel">
+          <div class="anim-title">The autonomous field \(b = J/\nu\): one field for all times</div>
+          <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+          <div class="anim-read"></div>
+        </div>
+        <div class="anim-panel">
+          <div class="anim-controls" style="margin-top:0; flex-direction:column; align-items:flex-start; gap:12px">
+            <button type="button" class="btn btn-outline play">Pause</button>
+            <button type="button" class="btn btn-outline basins">Show basins</button>
+            <div class="anim-legend" style="margin-left:0">
+              <span>the 300 noise draws flow along the exact field; colour = the data point each one reaches</span>
+              <span>thin lines: flow lines, which never cross</span>
+              <span>hover to follow the single flow line through a point</span>
+              <span>&ldquo;Show basins&rdquo;: the destination of every point of the plane, with the basin masses</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block reveal" id="map">
+    <p class="eyebrow">4 &middot; The Beckmann map</p>
+    <h2>Learn the endpoint, never integrate</h2>
+    <p class="prose">Define \(T(x)\) as the data point at the end of the flow line through \(x\). By construction \(T\) is constant along flow lines, and it fixes the data:</p>
+    <div class="eqn">$$J(x)\cdot\nabla T(x) = 0 \quad\text{off the data}, \qquad T(x) = x \quad\text{on the data}.$$</div>
+    <p class="prose">This is the conservation equation of BTM: \(J\cdot\nabla T\) is the derivative of \(T\) in the direction of the current, and it must vanish. The key move is to train a network on these two conditions directly, without ever integrating the flow or computing \(J\). A transport term enforces conservation through a stop-gradient \(\operatorname{sg}\); a boundary term pins the data:</p>
+    <div class="eqn">$$\mathcal L(T) = \underbrace{\mathbb E_{t,\,x_0,\,x_1}\Big\|T(I_t) - \operatorname{sg}\!\big(T(I_t) + \dot I_t\cdot\nabla T(I_t)\big)\Big\|^2}_{\text{transport}} \;+\; \lambda\,\underbrace{\mathbb E_{x_1}\big\|T(x_1) - x_1\big\|^2}_{\text{boundary}} .$$</div>
+    <p class="prose">Read the transport term as a rule: look a little way downstream along the line you are on, and move your prediction toward the prediction there. Its gradient is \(-2\,(\dot I_t\cdot\nabla T)\,\partial_\theta T\), so the update stops exactly when the directional derivative \(\dot I_t\cdot\nabla T(I_t)\) averages to zero at every point. Averaging \(\dot I_t\) over all pairs passing through \(x\) at all times is what produced the current in the first place:</p>
+    <div class="eqn">$$\mathbb E\big[\dot I_t\cdot\nabla T(I_t)\,\big|\,I_t = x\big]\ \text{ averaged over } t \text{ with weight } \rho_t \;=\; \frac{J(x)\cdot\nabla T(x)}{\nu(x)} .$$</div>
+    <p class="prose">So the stopped update on random straight lines enforces \(J\cdot\nabla T = 0\), and nobody ever computes \(J\). The ODE never appears, in training or in sampling: a sample is \(T(x_0)\), one call. Hover or tap the map.</p>
+    <div class="anim" id="d-map">
+      <div class="anim-panels">
+        <div class="anim-panel">
+          <div class="anim-title">The basins are the map: \(x \mapsto T(x)\)</div>
+          <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+          <div class="anim-read"></div>
+        </div>
+        <div class="anim-panel">
+          <div class="anim-legend" style="margin-left:0; flex-direction:column; align-items:flex-start; gap:8px">
+            <span>solid arrow: what the map does, one call from <i>x</i> to its data point</span>
+            <span>dotted line: the flow line the ODE would have followed to get there</span>
+            <span>the map is constant along every flow line, so the arrow can start anywhere on the dotted line and end at the same point</span>
+          </div>
+          <div class="algo" style="margin-top:14px">
+            <div class="algo-head">Algorithm <span>training a Beckmann map (no guidance)</span></div>
+<pre>for each training step:
+    draw x0 ~ N(0, I),  x1 ~ data,  t ~ U(0, 1)
+    I = (1 - t) x0 + t x1;   v = x1 - x0
+    L_tr = | T(I) - sg[ T(I) + DT(I) v ] |^2      # DT(I) v: a forward-mode
+    L_bd = | T(x1) - x1 |^2                        #   Jacobian-vector product
+    &theta; &larr; &theta; - &eta; &nabla;&theta; ( L_tr + &lambda; L_bd )
+
+sample:  x = T(x0)                                 # one network call</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block reveal" id="compare">
+    <p class="eyebrow">5 &middot; One call versus many</p>
+    <h2>The same noise, two generators</h2>
+    <p class="prose">Left: flow matching, Euler&rsquo;s method with \(N\) equal steps from the same 300 noise draws, each step one network call. Right: the Beckmann map, one call. Pick \(N\) and press generate. With one step, flow matching puts every sample on the data mean; with a few, between data points; the map lands on them.</p>
+    <div class="anim" id="d-compare">
+      <div class="anim-panels">
+        <div class="anim-panel">
+          <div class="anim-title">Flow matching, <i>N</i> Euler steps</div>
+          <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+          <div class="anim-read"></div>
+        </div>
+        <div class="anim-panel">
+          <div class="anim-title">Beckmann map, one call</div>
+          <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+          <div class="anim-read"></div>
+        </div>
+      </div>
+      <div class="anim-controls">
+        <label>steps <i>N</i></label>
+        <div class="seg"><button type="button" data-n="1" class="on">1</button><button type="button" data-n="2">2</button><button type="button" data-n="4">4</button><button type="button" data-n="8">8</button><button type="button" data-n="32">32</button></div>
+        <button type="button" class="btn btn-outline go">Generate</button>
+        <div class="anim-legend"><span>grey = still moving; colour = the nearest data point at the end</span><span>mean distance = average distance of a sample to its nearest data point (0 is perfect)</span></div>
+      </div>
+    </div>
+    <p class="prose">The map here is the exact endpoint map of the toy&rsquo;s autonomous flow. The <a href="https://colab.research.google.com/github/tullebulle/tullebulle.github.io/blob/main/projects/sbm/tutorial/beckmann_maps.ipynb" target="_blank" rel="noopener">notebook</a> trains one with the algorithm above, on a CPU, in about a minute, and checks that its basins match these.</p>
+  </section>
+
+  <section class="block reveal" id="guidance">
+    <p class="eyebrow">6 &middot; Going further: what SBM adds</p>
+    <h2>Guidance, built into training</h2>
+    <p class="prose">Real models are conditional: the map takes a class label or a text prompt \(c\), and through condition dropout the same network also learns a null branch \(T_\emptyset\) that ignores it. Multistep models owe much of their quality to classifier-free guidance, which pushes a sample away from the null prediction and toward the conditional one with a strength \(\omega \ge 1\). A map has no velocity or score to guide, only endpoint predictions. The observation behind Scalable Beckmann Maps is that the current is a denoising field,</p>
+    <div class="eqn">$$J_c(x) = h_c(x)\,\big(\bar z_c(x) - x\big), \qquad h_c > 0,$$</div>
+    <p class="prose">with \(\bar z_c\) a weighted posterior mean of the data, so classifier-free guidance applies to the current as it does to a velocity. Substituting the map&rsquo;s own conditional and null predictions for the two denoisers gives the guided transport direction, used in place of \(\dot I_t\) in the transport loss, with the matching correction on the boundary target:</p>
+    <div class="eqn">$$\dot I_t^{\,\omega} = \dot I_t + \frac{1-\omega^{-1}}{1-t}\,\big(T(I_t, c) - T_\emptyset(I_t)\big), \qquad x_1 \;\to\; x_1 + (1-\omega^{-1})\big(T(x_1, c) - T_\emptyset(x_1)\big).$$</div>
+    <p class="prose">No second network, and sampling is still one call. Where the conditional and null predictions disagree, the current is bent toward the mode the condition favours and the basin boundaries move: the condition&rsquo;s typical modes gain mass, the ambiguous ones lose it. At \(\omega = 1\) everything reduces to the plain Beckmann map. The two-atom picture below is Figure 1 of the paper, live; drag \(\omega\).</p>
+        <div class="anim" id="fig1-anim">
+      <div class="anim-panels three">
+        <div class="anim-panel">
+          <div class="anim-title">(a) One SBM training step</div>
+          <div class="anim-stage static"><img src="../assets/fig1a.svg" alt="One SBM training step on the two-atom toy: the unguided transport direction, the conditional-null correction and the guided direction at the interpolant point" /></div>
+          <div class="anim-read">one pair (<i>x</i><sub>0</sub>, <i>x</i><sub>1</sub> = &minus;e<sub>1</sub>) at <i>S</i> = 0.3</div>
+        </div>
+        <div class="anim-panel">
+          <div class="anim-title">(b) Beckmann map, &omega; = 1</div>
+          <div class="anim-stage"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+          <div class="anim-read"></div>
+        </div>
+        <div class="anim-panel">
+          <div class="anim-title" id="title-sbm">(c) SBM, &omega; = 2.00</div>
+          <div class="anim-stage"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+          <div class="anim-read"></div>
+        </div>
+      </div>
+      <div class="anim-controls">
+        <button type="button" id="play" class="btn btn-outline">Pause</button>
+        <label for="omega">guidance strength &omega; = <span id="omega-val">2.00</span></label>
+        <input type="range" id="omega" min="1" max="2.5" step="0.05" value="2" />
+        <div class="anim-legend">
+          <span><i class="sw" style="background:#1B8A6B"></i>sent to +e<sub>1</sub></span>
+          <span><i class="sw" style="background:#1769E0"></i>sent to &minus;e<sub>1</sub></span>
+          <span><i class="sw" style="background:#BB5078"></i>reassigned by guidance</span>
+          <span><i class="sw hatch"></i><i>T</i>(&middot;, <i>c</i>) &ne; <i>T</i>(&middot;, &empty;)</span>
+          <span><i class="ln" style="border-color:#4A4A4A"></i>unguided separatrix</span>
+          <span><i class="ln" style="border-color:#1B8A6B"></i>SBM separatrix</span>
+          <span><i class="ln dashed" style="border-color:#8F8E88"></i>null separatrix</span>
+        </div>
+      </div>
+    </div>
+    <p class="cap">The paper proves that the guided stopped update is consistent with a guided conservation equation under the assumptions of its Theorem 2, characterizes the bias of substituting map predictions for denoisers, and shows that the implicit correction keeps the variance of the unguided target where an explicit guided target multiplies it by \(\omega^2\).</p>
+  </section>
+
+  <section class="block reveal" id="next">
+    <p class="eyebrow">7 &middot; Keep going</p>
+    <h2>From the toy to ImageNet</h2>
+    <p class="prose">The recipe that trains maps with hundreds of millions of parameters keeps exactly the two losses above and adds engineering around the stop-gradient: a frozen copy of the network for the stopped targets, a per-row normalization of the transport term, an adaptive balance between the transport and boundary gradients, a mixture of interpolation times, and a boundary level that lets the boundary term see slightly noisy data. With those, a Beckmann map trained from scratch in the latent space of a representation autoencoder reaches a one-step FID of 1.6 on ImageNet 256, a GenEval score of 0.86 in text-to-image generation, and beats DriftWorld on two robot world-modelling benchmarks, with one network evaluation per sample and no teacher.</p>
+    <div class="resources">
+      <div><p class="lead">Notebook.</p><p>The same five steps in code: train flow matching and a Beckmann map on this toy, compare them at one call, and fine-tune a conditional map with guidance. CPU only, a few minutes. <a href="https://colab.research.google.com/github/tullebulle/tullebulle.github.io/blob/main/projects/sbm/tutorial/beckmann_maps.ipynb" target="_blank" rel="noopener">Open in Colab</a> or <a href="https://github.com/tullebulle/tullebulle.github.io/blob/main/projects/sbm/tutorial/beckmann_maps.ipynb" target="_blank" rel="noopener">read it on GitHub</a>.</p></div>
+      <div><p class="lead">Project page.</p><p>Headline numbers, samples, the animations, the full tables, and a <a href="../#demo">live text-to-image demo</a> of a map trained at scale. <a href="../">Scalable Beckmann Maps improve one-step generation</a>.</p></div>
+      <div><p class="lead">Names.</p><p>BTM, Beckmann Transport Models, is the framework: the autonomous current, the conservation law, and both ways to use them. The <em>Beckmann map</em> is the endpoint map \(T\) trained directly through the losses above, sampled in one call. SBM scales that map.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Beckmann maps tutorial &middot; companion to <a href="../">Scalable Beckmann Maps improve one-step generation</a> &middot; <a href="../seeds/">seed gallery</a></p>
+  </footer>
+</main>
+<script src="../assets/btm_fields.js"></script>
+<script src="../assets/btm_anim.js"></script>
+<script src="../assets/fig1_fields.js"></script>
+<script src="../assets/fig1_anim.js"></script>
+<script src="../assets/tutorial.js?v=1"></script>
+<script src="../assets/page.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}], throwOnError: false})"></script>
+</body>
+</html>

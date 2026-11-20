@@ -491,3 +491,18 @@ details.more .cap { text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
 .loops .loop img { display: block; width: 100%; max-width: 804px; margin: 0 auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 .loops .loop .cap { margin-top: 0.45rem; }
 @media (max-width: 760px) { .loops { grid-template-columns: 1fr; } }
+
+/* Tutorial page (projects/sbm/tutorial/) */
+.eqn { margin: 0.8rem 0 1.0rem; overflow-x: auto; overflow-y: hidden; }
+.eqn .katex-display { margin: 0.3rem 0; }
+.katex { font-size: 1.04em; }
+.prose .katex { white-space: nowrap; }
+.titlebox .tagline.tut { max-width: 62ch; }
+.titlebox .eyebrow { margin-bottom: 0.2rem; }
+.seg { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.seg button { font: inherit; font-size: 0.88rem; padding: 3px 11px; border: 1px solid var(--line); background: #fff; color: var(--slate); cursor: pointer; border-radius: 3px; }
+.seg button:hover { border-color: var(--juniper); }
+.seg button.on { background: var(--juniper); color: #fff; border-color: var(--juniper); }
+.anim-legend span { white-space: normal; }
+.anim-legend { line-height: 1.35; }
+.resources .lead { margin-bottom: 0.2rem; }
