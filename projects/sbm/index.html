@@ -7,8 +7,8 @@
   <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="icon" href="/ulrik-unneberg-vv-logo-verdigris/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/ulrik-unneberg-vv-logo-verdigris/apple-touch-icon.png">
-  <meta name="description" content="Project page for Scalable Beckmann Maps (SBM): guidance and a training recipe for one-step Beckmann transport maps. One-step ImageNet 256x256 FID 1.6, GenEval 0.86 and world models that beat DriftWorld, with no teacher and no feature loss." />
-  <link rel="stylesheet" href="css/style.css?v=5" />
+  <meta name="description" content="Project page for Scalable Beckmann Maps (SBM): guidance and a training recipe for one-step Beckmann transport maps. One-step ImageNet 256x256 FID 1.6 with 3.2x less training compute than iMF, GenEval 0.86 and world models that beat DriftWorld, with no teacher and no feature loss." />
+  <link rel="stylesheet" href="css/style.css?v=7" />
   <link rel="preload" as="font" type="font/woff" href="assets/fonts/lmroman10-regular.woff" crossorigin />
 </head>
 <body>
@@ -38,6 +38,10 @@
         <div class="label">one-step FID, ImageNet 256&times;256</div>
       </div>
       <div class="number">
+        <div class="metric">3.2&times;</div>
+        <div class="label">less pretraining compute than iMF-XL/2</div>
+      </div>
+      <div class="number">
         <div class="metric">0.856</div>
         <div class="label">GenEval, text-to-image</div>
       </div>
@@ -51,7 +55,7 @@
 
   <section class="block reveal" id="abstract">
     <p class="abstract prose">
-      <span class="lead">Abstract.</span> Beckmann Transport Models (BTM) learn one-step generative maps end-to-end from data, without a teacher, a distillation stage, or pretrained features. We introduce Scalable Beckmann Maps (SBM), which bring to BTM the two ingredients behind the quality of modern multistep generators: classifier-free guidance (CFG) and a training recipe that scales, while keeping sampling at a single network evaluation. CFG combines conditional and unconditional velocity or score predictions, which a Beckmann map does not have. Our guidance rests on one observation: the BTM current is a positive multiple of an autonomous denoising field, to which CFG applies as it does to a velocity. With exact denoisers this gives guided BTM. In practice we substitute the map&rsquo;s own conditional and null predictions for the denoisers, which requires no additional network and introduces a bias that we characterize. We show that the guided update is consistent with a guided conservation equation, and that guidance can move the boundaries between basins, sending more noise to the modes a condition favors. Trained from scratch in the latent of a representation autoencoder, SBM reaches a one-step FID of 1.6 on ImageNet 256&times;256 outperforming improved MeanFlow baselines with 4.5&times; less FLOPs without a teacher or a feature loss, and a GenEval score of 0.86 in text-to-image generation with one network evaluation. As a world model, where we train without guidance, the recipe alone outperforms DriftWorld on all five metrics of two robot-manipulation benchmarks, with 1.9&ndash;2.8&times; less training compute and no pretrained auxiliary feature encoder.
+      <span class="lead">Abstract.</span> Beckmann Transport Models (BTM) learn one-step generative maps end-to-end from data, without a teacher, a distillation stage, or pretrained features. We introduce Scalable Beckmann Maps (SBM), which bring to BTM the two ingredients behind the quality of modern multistep generators: classifier-free guidance (CFG) and a training recipe that scales, while keeping sampling at a single network evaluation. CFG combines conditional and unconditional velocity or score predictions, which a Beckmann map does not have. Our guidance rests on one observation: the BTM current is a positive multiple of an autonomous denoising field, to which CFG applies as it does to a velocity. With exact denoisers this gives guided BTM. In practice we substitute the map&rsquo;s own conditional and null predictions for the denoisers, which requires no additional network and introduces a bias that we characterize. We show that the guided update is consistent with a guided conservation equation, and that guidance can move the boundaries between basins, sending more noise to the modes a condition favors. Trained from scratch in the latent of a representation autoencoder, SBM reaches a one-step FID of 1.6 on ImageNet 256&times;256 outperforming the Improved-MeanFlow baseline with 3.2&times; less FLOPs without a teacher or a feature loss, and a GenEval score of 0.86 in text-to-image generation with one network evaluation. As a world model, where we train without guidance, the recipe alone outperforms DriftWorld on all five metrics of two robot-manipulation benchmarks, with 1.9&ndash;2.8&times; less training compute and no pretrained auxiliary feature encoder.
     </p>
   </section>
 
@@ -246,7 +250,7 @@ sample:  x = T(x0, c)                                               # one networ
     <p class="prose" style="margin-top:1.6rem"><b class="sf">ImageNet and text to image.</b> Trained from scratch in the latent of a representation autoencoder, with one map evaluation and one decoder call per image.</p>
     <figure class="fig">
       <img src="assets/fig4_imagenet.png" alt="Three panels: FID against training compute during pretraining at base size; final one-step FID against training compute for published models; FDr6 against FID" loading="lazy" decoding="async" />
-      <figcaption class="cap"><b>ImageNet 256&times;256.</b> Left: at base size SBM is ahead of every baseline at every epoch and passes BTM-XL/2&rsquo;s final FID within ten epochs. Centre: SBM-B and SBM-XL sit on the compute&ndash;FID front; SBM-XL reaches 1.61 at 800 EFLOP where iMF-XL/2 reports 1.72 at 3,500. Right: the six-encoder Fr&eacute;chet distance agrees.</figcaption>
+      <figcaption class="cap"><b>ImageNet 256&times;256.</b> Left: at base size SBM is ahead of every baseline at every epoch and passes BTM-XL/2&rsquo;s final FID within 3.5 epochs. Centre: SBM-B and SBM-XL sit on the compute&ndash;FID front; SBM-XL reaches 1.61 at 840 EFLOP where iMF-XL/2 reports 1.72 at 2,700, 3.2 times the compute. Right: the six-encoder Fr&eacute;chet distance agrees.</figcaption>
     </figure>
     <figure class="fig medium">
       <img src="assets/fig6_geneval.png" alt="GenEval against inference compute per image and against training compute: SBM-B and SBM-XL are the only one-step points" loading="lazy" decoding="async" />
@@ -265,14 +269,14 @@ sample:  x = T(x0, c)                                               # one networ
             <tr><td>RAE + DiT<sup>DH</sup>-XL/2</td><td>RAE</td><td>839M + 415M</td><td class="dash">&ndash;</td><td>Velocity</td><td class="num">2 &times; 50</td><td class="num">1.13</td><td class="num">262.6</td></tr>
             <tr class="group"><td colspan="8">One-step diffusion / flows</td></tr>
             <tr><td>Shortcut XL/2</td><td>SD-VAE</td><td>675M + 49M</td><td class="dash">&ndash;</td><td>Velocity</td><td class="num">1</td><td class="num">10.60</td><td class="num dash">&ndash;</td></tr>
-            <tr><td>MeanFlow XL/2</td><td>SD-VAE</td><td>676M + 49M</td><td class="dash">&ndash;</td><td>Velocity</td><td class="num">1</td><td class="num">3.43</td><td class="num dash">&ndash;</td></tr>
+            <tr><td>MeanFlow XL/2</td><td>SD-VAE</td><td>676M + 49M</td><td class="dash">&ndash;</td><td>Velocity</td><td class="num">1</td><td class="num">3.43</td><td class="num">247.5</td></tr>
             <tr><td>iMF XL/2</td><td>SD-VAE</td><td>610M + 49M</td><td>Velocity (101M)</td><td>Velocity</td><td class="num">1</td><td class="num">1.72</td><td class="num">282.0</td></tr>
             <tr><td>pMF-H/16</td><td>pixel</td><td>956M</td><td>LPIPS + ConvNeXt-V2</td><td>Velocity</td><td class="num">1</td><td class="num">2.22</td><td class="num">268.8</td></tr>
             <tr class="group"><td colspan="8">One-step pushforward</td></tr>
             <tr><td>Drifting L/2</td><td>SD-VAE</td><td>463M + 49M</td><td>MAE-640 (2.13B)</td><td>Data</td><td class="num">1</td><td class="num">1.54</td><td class="num">258.9</td></tr>
             <tr><td>BTM XL/2</td><td>SD-VAE</td><td class="dash">&ndash;</td><td class="dash">&ndash;</td><td class="dash">&ndash;</td><td class="num">1</td><td class="num">17.58</td><td class="num dash">&ndash;</td></tr>
-            <tr class="ours"><td>SBM-XL/2 (SD-VAE)</td><td>SD-VAE</td><td>675M + 49M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">3.5</td><td class="num dash">&ndash;</td></tr>
-            <tr class="ours"><td>SBM-B (RAE)</td><td>RAE</td><td>129M + 415M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">2.79</td><td class="num dash">&ndash;</td></tr>
+            <tr class="ours"><td>SBM-XL/2 (SD-VAE)</td><td>SD-VAE</td><td>675M + 49M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">3.5</td><td class="num">266.0</td></tr>
+            <tr class="ours"><td>SBM-B (RAE)</td><td>RAE</td><td>129M + 415M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">2.79</td><td class="num">200.0</td></tr>
             <tr class="ours"><td>SBM-XL (RAE)</td><td>RAE</td><td>669M + 415M</td><td class="dash">&ndash;</td><td>Data</td><td class="num">1</td><td class="num">1.61</td><td class="num">256.5</td></tr>
           </tbody>
         </table>
@@ -313,7 +317,7 @@ sample:  x = T(x0, c)                                               # one networ
           </div>
         </div>
         <div>
-          <p class="cap above"><span class="lab">Table 4</span> <b>RT-1</b> world modelling.</p>
+          <p class="cap above"><span class="lab">Table 4</span> <b>RT-1</b> world modelling. Seconds per generated frame include latent decoding; SBM on one H200 at batch 1.</p>
           <div class="table-wrap">
             <table class="results">
               <thead><tr><th>model</th><th class="num">EFLOP</th><th class="num">SSIM &uarr;</th><th class="num">PSNR &uarr;</th><th class="num">LPIPS &darr;</th><th class="num">FID &darr;</th><th class="num">FVD &darr;</th><th class="num">NFE</th><th class="num">s / frame &darr;</th></tr></thead>
@@ -323,8 +327,8 @@ sample:  x = T(x0, c)                                               # one networ
                 <tr><td>LVDM</td><td class="num dash">&ndash;</td><td class="num">0.750</td><td class="num">21.00</td><td class="num">0.153</td><td class="num">5.40</td><td class="num">94.6</td><td class="num">59</td><td class="num">0.284</td></tr>
                 <tr><td>VDM</td><td class="num dash">&ndash;</td><td class="num">0.540</td><td class="num">13.82</td><td class="num">0.246</td><td class="num">31.68</td><td class="num">406.1</td><td class="num">59</td><td class="num">3.153</td></tr>
                 <tr><td>DriftWorld</td><td class="num">&ge; 16.1</td><td class="num">0.841</td><td class="num">24.20</td><td class="num">0.097</td><td class="num">8.99</td><td class="num">62.8</td><td class="num">1</td><td class="num">0.019</td></tr>
-                <tr class="ours"><td>SBM (short run)</td><td class="num">5.7</td><td class="num">0.864</td><td class="num">25.61</td><td class="num">0.071</td><td class="num">7.70</td><td class="num">28.3</td><td class="num">1</td><td class="num">0.014</td></tr>
-                <tr class="ours"><td>SBM (long run)</td><td class="num">43.4</td><td class="num">0.880</td><td class="num">26.90</td><td class="num">0.057</td><td class="num">4.02</td><td class="num">16.1</td><td class="num">1</td><td class="num">0.014</td></tr>
+                <tr class="ours"><td>SBM (short run)</td><td class="num">5.7</td><td class="num">0.864</td><td class="num">25.61</td><td class="num">0.071</td><td class="num">7.70</td><td class="num">28.3</td><td class="num">1</td><td class="num">0.021</td></tr>
+                <tr class="ours"><td>SBM (long run)</td><td class="num">43.4</td><td class="num">0.880</td><td class="num">26.90</td><td class="num">0.057</td><td class="num">4.02</td><td class="num">16.1</td><td class="num">1</td><td class="num">0.021</td></tr>
               </tbody>
             </table>
           </div>
