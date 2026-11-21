@@ -94,3 +94,61 @@
   .choices { gap: 3px; }
   .choices span { min-width: 1.95rem; }
 }
+
+/* Paired views of Figure 2 share an outer clock and a single set of endpoints. */
+.steering-figure { margin: 1.65rem 0 2rem; scroll-margin-top: 1rem; }
+.steering-figure h3 { margin: 0 0 .65rem; }
+#steering-poster { width: min(100%, 820px); height: auto; margin-inline: auto; }
+#steering-poster[hidden], #steering-player[hidden] { display: none; }
+#steering-player { border: 1px solid var(--box-frame); border-radius: 10px; padding: 16px 18px 10px; }
+.steering-panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.steering-view { min-width: 0; }
+.steering-view + .steering-view { border-left: 1px solid var(--line); padding-left: 14px; }
+.steering-view h4 { text-align: center; font: 700 1.05rem var(--sf); color: var(--slate); margin: 0; }
+.steering-view h4 i { font: italic 1.05rem var(--rm); }
+.steering-view svg { width: 100%; height: auto; display: block; overflow: visible; }
+.steering-view svg text { font: 13px var(--rm); fill: var(--slate); }
+.steering-view svg .class-label { font-weight: 700; font-size: 15px; }
+.steering-view svg .reward-label { fill: var(--molecule); }
+.steering-view svg .time-label { font-style: italic; }
+.steering-view svg .origin-label { fill: var(--muted); }
+.start-density { fill: #efefee; stroke: #a6aaa8; stroke-width: .9; }
+.end-density, .simplex { fill: #f0f1df; stroke: #8c9a83; stroke-width: 1; }
+.vertex { fill: #fbf7ed; stroke: #77836e; stroke-width: 1; }
+.look-line { fill: none; stroke: #747b79; stroke-width: 1; }
+.look-dot { fill: #747b79; }
+.look-line.reward-look { stroke: var(--molecule); }
+.look-dot.reward-look { fill: var(--molecule); }
+.base-path, .guided-path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.base-path { stroke: #333b3c; stroke-width: 1.9; stroke-dasharray: 4 4; }
+.guided-path { stroke: var(--molecule); stroke-width: 2.8; }
+.base-dot, .branch-point { fill: #333b3c; stroke: white; stroke-width: 1; }
+.guided-dot { fill: var(--molecule); stroke: white; stroke-width: 1.1; }
+.steering-key, .steering-controls, .steer-reward { display: flex; align-items: center; flex-wrap: wrap; }
+.steering-key { gap: .35rem 1.05rem; justify-content: center; margin: .15rem 0 .75rem; font: .91rem var(--sf); color: var(--slate); }
+.steering-key span { display: inline-flex; align-items: center; gap: .35rem; }
+.steering-key i { width: 1.6rem; border-top: 1px solid #747b79; }
+.steering-key .base { border-top: 2px dashed #333b3c; }
+.steering-key .guided { border-top: 3px solid var(--molecule); }
+.steering-controls { gap: .5rem .65rem; border-top: 1px solid var(--line); padding-top: .72rem; }
+.steering-controls button { min-width: 4.35rem; cursor: pointer; }
+.steer-range-label, .steer-reward legend { color: var(--juniper); font: 700 .9rem var(--sf); }
+#steer-progress { min-width: 65px; flex: 1; accent-color: var(--juniper); cursor: pointer; }
+.steer-reward { border: none; gap: .25rem; margin-left: .4rem; }
+.steer-reward legend { float: left; padding-right: .4rem; }
+.steer-reward label { position: relative; }
+.steer-reward input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+.steer-reward span { display: block; min-width: 2rem; line-height: 1.9rem; text-align: center; font-family: var(--sf); font-weight: 700; border-radius: 5px; border: 1px solid var(--line); color: var(--juniper); }
+.steer-reward input:checked + span { color: white; border-color: var(--molecule); background: var(--molecule); }
+.steer-reward input:focus-visible + span, #steer-progress:focus-visible { outline: 3px solid var(--sage); outline-offset: 2px; }
+.steer-phase { margin: .55rem 0 0; font: .95rem var(--sf); color: var(--juniper); text-align: left; min-height: 1.35em; }
+@media (max-width: 680px) {
+  #steering-player { padding: 12px 10px; }
+  .steering-panels { grid-template-columns: 1fr; gap: .5rem; }
+  .steering-view + .steering-view { border-left: 0; border-top: 1px solid var(--line); padding: .55rem 0 0; }
+  .steering-view svg { max-width: 310px; margin-inline: auto; }
+  .steering-key { justify-content: start; margin-block: .6rem; }
+  .steering-controls { display: grid; grid-template-columns: auto auto 1fr; }
+  .steer-reward { grid-column: 3; grid-row: 1; justify-self: end; margin: 0; }
+  #steer-progress { grid-column: 2 / 4; width: 100%; }
+}

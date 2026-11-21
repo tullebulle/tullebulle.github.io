@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="preload" as="font" type="font/woff" href="../sbm/assets/fonts/lmroman10-regular.woff" crossorigin>
   <script src="page.js" defer></script>
+  <script src="steering.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#examples">Skip to molecular examples</a>
@@ -36,6 +37,7 @@
     <div class="links">
       <span class="btn paper-status" aria-disabled="true">Paper (arXiv forthcoming)</span>
       <a class="btn" href="https://github.com/shiyiwang958/MultiMFM">Code (GitHub)</a>
+      <a class="btn btn-outline" href="#steering-animation">Steering animation</a>
       <a class="btn btn-outline" href="#cite">BibTeX</a>
     </div>
   </header>
@@ -83,6 +85,32 @@
   <section class="block" id="method" aria-labelledby="method-title">
     <h2 id="method-title">How the steering works</h2>
     <p>Halfway through generating a molecule, many final structures are still possible. A Meta Flow Map samples these possible endpoints given the current state. Their rewards tell us how to adjust the next step of the generator. The map learns the base generator’s posterior once, so a different property or combination of properties can be targeted by changing the reward at sampling time.</p>
+    <figure class="steering-figure" id="steering-animation">
+      <figcaption><h3>Inside one steering step</h3></figcaption>
+      <img id="steering-poster" src="assets/steering-schematic.png" alt="Figure 2. From a shared current state, a set of possible joint endpoints sends the red guided path away from the dashed base path in both coordinates." width="1250" height="587" loading="lazy">
+      <div id="steering-player" hidden>
+        <div class="steering-panels">
+          <div class="steering-view"><h4>Continuous coordinate <i>y</i></h4><svg id="steer-continuous" viewBox="0 0 340 202" role="img" aria-label="Three possible final positions, with the endpoint distribution above."></svg></div>
+          <div class="steering-view"><h4>Categorical state <i>a</i></h4><svg id="steer-discrete" viewBox="0 0 340 202" role="img" aria-label="The same draw shown on a simplex with categories A, B and C at its vertices."></svg></div>
+        </div>
+        <div class="steering-key"><span><i class="look"></i>Posterior look-aheads</span><span><i class="base"></i>Unguided path</span><span><i class="guided"></i>Guided path</span></div>
+        <div class="steering-controls">
+          <button type="button" class="btn btn-outline" id="steer-play">Play</button>
+          <button type="button" class="btn btn-outline" id="steer-replay">Replay</button>
+          <label for="steer-progress" class="steer-range-label">Playback</label>
+          <input id="steer-progress" type="range" min="0" max="1000" value="0" aria-label="Animation progress">
+          <fieldset class="steer-reward"><legend>Reward</legend>
+            <label><input type="radio" name="steer-reward" value="0"><span>A</span></label>
+            <label><input type="radio" name="steer-reward" value="2" checked><span>C</span></label>
+          </fieldset>
+        </div>
+        <p id="steer-phase" class="steer-phase"></p>
+      </div>
+      <p class="cap"><b>Figure 2, animated.</b> Both panels follow the same sample. Each look-ahead pairs a possible final position with a category. Rewarding one category bends the continuous path too, because position and category are correlated in this toy distribution.</p>
+      <details class="more"><summary>How the animation is computed</summary>
+        <p class="cap">This three-component Gaussian mixture has one category per component and a known joint posterior. We follow the unguided flow to <i>t</i> = 0.30 and draw 18 joint endpoints conditional on that state. The selected category receives a log-reward of 3.6. The gray lines connect the current state to the sampled endpoints. The black and red trajectories integrate the base and reward-tilted velocities using the exact posterior means. In the learned model, multiMFM supplies the posterior samples.</p>
+      </details>
+    </figure>
     <figure class="fig toy-figure">
       <a href="assets/particles.png" aria-label="Open the particle experiment at full size"><img src="assets/particles.png" alt="From left to right, noisy particles, an unguided square of mixed colors, a Norwegian flag, and a smiley face." loading="lazy" width="1460" height="475"></a>
       <figcaption class="cap"><b>Two rewards, one generator.</b> Each particle has a continuous position and a discrete color. The flag reward steers color while keeping the square shape. The smiley reward steers both position and color.</figcaption>
