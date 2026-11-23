@@ -1,0 +1,55 @@
+/* multiMFM project page. Everything shared with the SBM page (Latin Modern, title box, headline numbers, eyebrows,
+   captions, tables, the .anim frame) comes from ../sbm/css/style.css; this file only adds what is particular here:
+   the crimson the paper's figures use for the steered samples, and the stage of the animated Figure 2. */
+
+:root {
+    --steer: #a01228;        /* steered samples in the paper's figures */
+    --gold: #dca51f;         /* reward gradient */
+}
+
+sub { line-height: 0; }      /* subscripts in running text do not open up the line */
+
+/* figures open at full size */
+.fig a { display: block; }
+.fig.toy { margin-top: 2rem; }
+
+/* headline numbers: the widest tile is "1.17 -> 0.15" */
+@media (max-width: 1000px) and (min-width: 901px) { .number .metric { font-size: 2rem; } }
+
+/* animated Figure 2: one stage, two linked views */
+.anim-stage.steer { aspect-ratio: 2.1 / 1; }
+.steer-heads { display: grid; grid-template-columns: 61.5% 38.5%; }
+.steer-heads .anim-title { font-size: 0.95rem; line-height: 1.3; }
+.steer-cap { display: none; position: absolute; left: 10px; font-weight: 700; color: var(--slate); font-size: 0.9rem; line-height: 1.2; pointer-events: none; }
+.steer-cap.top { top: 8px; }
+.steer-cap.bottom { top: calc(100% * 0.70 / 1.62 + 8px); left: auto; right: 10px; }
+
+.steer-pick { display: inline-flex; align-items: center; gap: 8px; }
+.steer-pick .lab { font-style: italic; }
+.steer-pick .seg button { font-family: var(--rm); font-size: 0.95rem; padding: 2px 12px 3px; border-radius: 999px; }
+.steer-pick .seg button.on { background: var(--steer); border-color: var(--steer); }
+.steer-pick .seg button:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+#steer-anim input[type="range"] { accent-color: var(--steer); width: 150px; }
+#steer-anim .anim-read { font-size: 0.92rem; margin-top: 7px; }
+#steer-anim .anim-legend { margin-left: 0; width: 100%; }
+#steer-anim .anim-legend b { font-family: var(--rm); }
+#steer-anim .anim-legend span span { display: inline; }     /* running text with maths in it: no flex gaps between the pieces */
+#steer-anim .anim-legend em { font-style: italic; }
+.anim-legend .ln.thick { border-top-width: 3px; }
+.anim-legend .ln.thin { border-top-width: 1.3px; }
+#steer-anim noscript img { width: 100%; margin-top: 10px; }
+
+@media (max-width: 640px) {
+    .anim-stage.steer { aspect-ratio: 1 / 1.62; }
+    .steer-heads { display: none; }
+    .steer-cap { display: block; }
+    #steer-anim input[type="range"] { width: 130px; }
+    #steer-anim .anim-read { min-height: 2.9em; }
+}
+
+/* a little air between one table and the next caption */
+details.more .table-wrap + .cap.above, details.more .table-wrap + .two-tables, details.more .two-tables + .cap { margin-top: 1.5rem; }
+
+/* long tables scroll inside their own box on narrow screens */
+table.results sub { font-size: 0.75em; }
+pre.bib { white-space: pre-wrap; overflow-wrap: anywhere; }

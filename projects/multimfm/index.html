@@ -1,172 +1,275 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Multimodal Meta Flow Maps · Ulrik Unneberg</title>
-  <meta name="description" content="One posterior sampler per generator steers molecular properties and DNA cyclizability at inference time. Explore the molecules and results from multiMFM.">
-  <meta property="og:title" content="Scalable Inference-time Steering in Biological Design with Multimodal Meta Flow Maps">
-  <meta property="og:description" content="Compare molecular targets with samples drawn before and after steering, and explore the QM9 and DNA experiments.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://tullebulle.github.io/projects/multimfm/">
-  <meta property="og:image" content="https://tullebulle.github.io/images/multimfm.png">
-  <link rel="icon" href="../../favicon.ico">
-  <link rel="stylesheet" href="../sbm/css/style.css?v=7">
-  <link rel="stylesheet" href="style.css">
-  <link rel="preload" as="font" type="font/woff" href="../sbm/assets/fonts/lmroman10-regular.woff" crossorigin>
-  <script src="page.js" defer></script>
-  <script src="steering.js" defer></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scalable Inference-time Steering in Biological Design with Multimodal Meta Flow Maps</title>
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/ulrik-unneberg-vv-logo-verdigris/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/ulrik-unneberg-vv-logo-verdigris/apple-touch-icon.png">
+  <meta name="description" content="Project page for multimodal Meta Flow Maps (multiMFM): one reward-independent posterior sampler per generator steers molecular properties on QM9 and GEOM-Drugs and DNA cyclizability at inference time, with an animated version of the paper's steering figure." />
+  <meta property="og:title" content="Scalable Inference-time Steering in Biological Design with Multimodal Meta Flow Maps" />
+  <meta property="og:description" content="One posterior sampler per generator. Change the reward at sampling time to steer a molecule or a DNA sequence toward a new target." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://tullebulle.github.io/projects/multimfm/" />
+  <meta property="og:image" content="https://tullebulle.github.io/images/multimfm.png" />
+  <link rel="stylesheet" href="../sbm/css/style.css?v=7" />
+  <link rel="stylesheet" href="css/style.css?v=3" />
+  <link rel="preload" as="font" type="font/woff" href="../sbm/assets/fonts/lmroman10-regular.woff" crossorigin />
 </head>
 <body>
-<a class="skip" href="#examples">Skip to molecular examples</a>
-<main class="page" id="top">
-  <nav class="page-nav" aria-label="Project navigation">
-    <a href="../../">Ulrik Unneberg</a>
-    <div><a href="#examples">Molecules</a><a href="#method">Method</a><a href="#dna">DNA</a><a href="#cite">Cite</a></div>
-  </nav>
+<div class="progress" id="progress" aria-hidden="true"></div>
+<main class="page">
 
   <header class="titlebox">
     <h1>Scalable Inference-time Steering in Biological Design with Multimodal Meta Flow Maps</h1>
-    <p class="tagline">Train one posterior sampler per generator. Change the reward to steer a molecule or a DNA sequence toward a new target.</p>
+    <p class="tagline">One posterior sampler per generator, trained once. Change the reward at sampling time to steer a molecule or a DNA sequence toward a new target.</p>
     <p class="authors">
-      <span class="row">Ulrik Unneberg<sup>1,*</sup>, Shiyi Wang<sup>1,3,4,*</sup>, Dinko Franceschi<sup>1</sup>, Ziyu Xiong<sup>2</sup></span>
+      <span class="row">Ulrik Unneberg<sup>1,&#8902;</sup>, Shiyi Wang<sup>1,3,4,&#8902;</sup>, Dinko Franceschi<sup>1</sup>, Ziyu Xiong<sup>2</sup></span>
       <span class="row">Boris Kozinsky<sup>1</sup>, Ellen D. Zhong<sup>2</sup>, Michael S. Albergo<sup>1,3,4</sup></span>
     </p>
-    <p class="affil"><sup>1</sup>Harvard University &nbsp; <sup>2</sup>Princeton University &nbsp; <sup>3</sup>Kempner Institute &nbsp; <sup>4</sup>IAIFI</p>
-    <p class="contrib">Preprint, 2026. <sup>*</sup>Equal contribution.</p>
+    <p class="affil"><sup>1</sup>Harvard University, <sup>2</sup>Princeton University, <sup>3</sup>Kempner Institute, <sup>4</sup>IAIFI</p>
+    <p class="contrib">Preprint, 2026. <sup>&#8902;</sup>Equal contribution.</p>
     <div class="links">
-      <span class="btn paper-status" aria-disabled="true">Paper (arXiv forthcoming)</span>
-      <a class="btn" href="https://github.com/shiyiwang958/MultiMFM">Code (GitHub)</a>
-      <a class="btn btn-outline" href="#steering-animation">Steering animation</a>
-      <a class="btn btn-outline" href="#cite">BibTeX</a>
+      <a href="#" class="btn" aria-disabled="true" title="Link coming soon">Paper (arXiv)</a>
+      <a href="https://github.com/shiyiwang958/MultiMFM" class="btn" target="_blank" rel="noopener">Code (GitHub)</a>
     </div>
   </header>
 
-  <section class="block" id="examples" aria-labelledby="examples-title">
-    <p class="eyebrow">GEOM-Drugs</p>
-    <h2 id="examples-title">Steering a molecule toward a target fingerprint</h2>
-    <p>Choose a target to compare two samples drawn from the same initial noise. The highlights mark shared structural features. A Tanimoto score of 1 means the fingerprints match exactly.</p>
-    <div class="explorer">
-      <fieldset class="picker">
-        <legend>Example target</legend>
-        <div class="choices">
-          <label><input type="radio" name="molecule" id="choose-a" value="a" aria-controls="sample-a" checked><span>A</span></label>
-          <label><input type="radio" name="molecule" id="choose-b" value="b" aria-controls="sample-b"><span>B</span></label>
-          <label><input type="radio" name="molecule" id="choose-c" value="c" aria-controls="sample-c"><span>C</span></label>
-          <label><input type="radio" name="molecule" id="choose-d" value="d" aria-controls="sample-d"><span>D</span></label>
-        </div>
-      </fieldset>
-      <div class="mol-panels">
-        <div class="mol-panel" id="sample-a" role="group" aria-label="Target A comparison">
-          <figure class="mol-cell target"><figcaption>Target A</figcaption><img src="assets/a-target.png" alt="A sulfur-containing fused ring." decoding="async"></figure>
-          <figure class="mol-cell"><figcaption>Base generator</figcaption><img src="assets/a-base.png" alt="Unguided sample. Gray marks a small shared fragment." decoding="async"><p class="score">Tanimoto <strong>0.11</strong></p></figure>
-          <figure class="mol-cell guided"><figcaption>multiMFM</figcaption><img src="assets/a-guided.png" alt="Steered sample. Pink marks the recovered fused ring system." decoding="async"><p class="score">Tanimoto <strong>0.70</strong></p></figure>
-        </div>
-        <div class="mol-panel" id="sample-b" role="group" aria-label="Target B comparison">
-          <figure class="mol-cell target"><figcaption>Target B</figcaption><img src="assets/b-target.png" alt="Two carbonyl groups on a fused-ring fragment." decoding="async"></figure>
-          <figure class="mol-cell"><figcaption>Base generator</figcaption><img src="assets/b-base.png" alt="Unguided sample. Gray marks a single ring." decoding="async"><p class="score">Tanimoto <strong>0.09</strong></p></figure>
-          <figure class="mol-cell guided"><figcaption>multiMFM</figcaption><img src="assets/b-guided.png" alt="Steered sample. Pink marks the matching carbonyl and ring arrangement." decoding="async"><p class="score">Tanimoto <strong>0.68</strong></p></figure>
-        </div>
-        <div class="mol-panel" id="sample-c" role="group" aria-label="Target C comparison">
-          <figure class="mol-cell target"><figcaption>Target C</figcaption><img src="assets/c-target.png" alt="Two aromatic rings joined by a chain with an amide group." decoding="async"></figure>
-          <figure class="mol-cell"><figcaption>Base generator</figcaption><img src="assets/c-base.png" alt="Unguided sample. Gray marks part of the shared chain." decoding="async"><p class="score">Tanimoto <strong>0.28</strong></p></figure>
-          <figure class="mol-cell guided"><figcaption>multiMFM</figcaption><img src="assets/c-guided.png" alt="Steered sample. Pink follows the chain between the two rings." decoding="async"><p class="score">Tanimoto <strong>0.81</strong></p></figure>
-        </div>
-        <div class="mol-panel" id="sample-d" role="group" aria-label="Target D comparison">
-          <figure class="mol-cell target"><figcaption>Target D</figcaption><img src="assets/d-target.png" alt="Two rings connected by a sulfonamide group." decoding="async"></figure>
-          <figure class="mol-cell"><figcaption>Base generator</figcaption><img src="assets/d-base.png" alt="Unguided sample. Gray marks the common sulfonyl fragment." decoding="async"><p class="score">Tanimoto <strong>0.17</strong></p></figure>
-          <figure class="mol-cell guided"><figcaption>multiMFM</figcaption><img src="assets/d-guided.png" alt="Steered sample. Pink marks a linker and ring fragments shared with the target." decoding="async"><p class="score">Tanimoto <strong>0.60</strong></p></figure>
-        </div>
+  <section class="block reveal" id="numbers">
+    <div class="numbers">
+      <div class="number">
+        <div class="metric">6 of 6</div>
+        <div class="label">QM9 properties with lower error than TFG-Flow</div>
+      </div>
+      <div class="number">
+        <div class="metric">2.5 h</div>
+        <div class="label">to distill one posterior sampler for every QM9 reward</div>
+      </div>
+      <div class="number">
+        <div class="metric">1.17 &rarr; 0.15</div>
+        <div class="label">DNA cyclizability error, scored by an independent oracle</div>
+      </div>
+      <div class="number">
+        <div class="metric">2.9&times;</div>
+        <div class="label">less sampling time than Feynman&ndash;Kac steering at 400 bp</div>
       </div>
     </div>
-    <p class="cap"><b>Across the full evaluation,</b> mean fingerprint similarity rose from 0.229 to 0.276 over 12,288 molecules per method in the 71-heavy-atom target pool. The four examples above were selected to illustrate which structures the guidance recovers.</p>
+    <p class="scroll-cue">Scroll to explore</p>
   </section>
 
-  <section class="block" id="method" aria-labelledby="method-title">
-    <h2 id="method-title">How the steering works</h2>
-    <p>Halfway through generating a molecule, many final structures are still possible. A Meta Flow Map samples these possible endpoints given the current state. Their rewards tell us how to adjust the next step of the generator. The map learns the base generator’s posterior once, so a different property or combination of properties can be targeted by changing the reward at sampling time.</p>
-    <figure class="steering-figure" id="steering-animation">
-      <figcaption><h3>Inside one steering step</h3></figcaption>
-      <img id="steering-poster" src="assets/steering-schematic.png" alt="Figure 2. From a shared current state, a set of possible joint endpoints sends the red guided path away from the dashed base path in both coordinates." width="1250" height="587" loading="lazy">
-      <div id="steering-player" hidden>
-        <div class="steering-panels">
-          <div class="steering-view"><h4>Continuous coordinate <i>y</i></h4><svg id="steer-continuous" viewBox="0 0 340 202" role="img" aria-label="Three possible final positions, with the endpoint distribution above."></svg></div>
-          <div class="steering-view"><h4>Categorical state <i>a</i></h4><svg id="steer-discrete" viewBox="0 0 340 202" role="img" aria-label="The same draw shown on a simplex with categories A, B and C at its vertices."></svg></div>
-        </div>
-        <div class="steering-key"><span><i class="look"></i>Posterior look-aheads</span><span><i class="base"></i>Unguided path</span><span><i class="guided"></i>Guided path</span></div>
-        <div class="steering-controls">
-          <button type="button" class="btn btn-outline" id="steer-play">Play</button>
-          <button type="button" class="btn btn-outline" id="steer-replay">Replay</button>
-          <label for="steer-progress" class="steer-range-label">Playback</label>
-          <input id="steer-progress" type="range" min="0" max="1000" value="0" aria-label="Animation progress">
-          <fieldset class="steer-reward"><legend>Reward</legend>
-            <label><input type="radio" name="steer-reward" value="0"><span>A</span></label>
-            <label><input type="radio" name="steer-reward" value="2" checked><span>C</span></label>
-          </fieldset>
-        </div>
-        <p id="steer-phase" class="steer-phase"></p>
+  <section class="block reveal" id="abstract">
+    <p class="abstract prose">
+      <span class="lead">Abstract.</span> Biological design problems naturally have continuous (e.g. molecular structures), discrete (e.g. DNA residue types) and often both modalities (e.g. protein structure-sequence co-design). Diffusion and CTMC-based methods have been developed for multimodal generation, and, for cross-modal tasks, the two are typically combined. However, it remains challenging to adapt these methods at inference-time to fulfill design constraints. Recent developments of one-shot samplers such as Meta Flow Maps (MFM) have demonstrated high controllability for image generation, showcasing the power of inference-time steering with accurately estimated reward gradients. Here, we adapt Meta Flow Maps to biological domains, and develop MFM framework both in discrete (dMFM) and multimodal settings (multiMFM). We demonstrate dMFM by designing DNA sequences with a target mechanical property. MultiMFM trained on the molecular datasets QM9 and GEOM-Drugs are applied to design molecules of a given physical property. In both cases, our steering algorithms improve target attainment using one reward-independent MFM per base generator.
+    </p>
+  </section>
+
+  <section class="block reveal" id="samples">
+    <p class="eyebrow">Samples</p>
+    <figure class="fig teaser">
+      <a href="assets/fig1_geom.png"><img src="assets/fig1_geom.png" width="3150" height="1046" alt="Four target molecules with their structural features highlighted, a base-generator sample under each with Tanimoto similarity 0.11, 0.09, 0.28 and 0.17, and a multiMFM sample under each with similarity 0.70, 0.68, 0.81 and 0.60" fetchpriority="high" /></a>
+      <figcaption class="cap"><b>Steering a molecule toward a target fingerprint, GEOM-Drugs.</b> Target molecules with their structural features highlighted (top), samples from the base generator (middle) and samples steered by multiMFM (bottom). Scores are fingerprint Tanimoto similarities to the target; 1 is an exact match. These four examples are curated. Over 12,288 molecules per method, the mean similarity rises from 0.229 to 0.276.</figcaption>
+    </figure>
+  </section>
+
+  <section class="block reveal" id="idea">
+    <p class="eyebrow">The idea</p>
+    <h2>Look ahead, then steer</h2>
+    <p class="prose">A flow model turns noise into a sample one step at a time, and partway through many endings are still possible. A Meta Flow Map draws those endings in a single network call: given the current state <i>x<sub>t</sub></i>, it returns samples from the posterior <i>p</i><sub>1|<i>t</i></sub>(&middot;&thinsp;|&thinsp;<i>x<sub>t</sub></i>). A reward scores these look-aheads, and the scores come back as a gradient that bends the next step. The map is distilled once from the base generator and never sees a reward, so a new objective needs no retraining.</p>
+    <p class="prose">A molecule has continuous coordinates and discrete atom types. multiMFM draws both parts of every look-ahead jointly, so a reward on one part steers the other. In the toy below, each mode of the continuous coordinate <i>y</i> comes with its own category <i>a</i>. Choose the category to reward and drag &lambda;.</p>
+    <div class="anim" id="steer-anim">
+      <div class="steer-heads" aria-hidden="true">
+        <div class="anim-title">Continuous coordinate <i>y</i>, flow time running into the page</div>
+        <div class="anim-title">Discrete coordinate <i>a</i>, on the simplex</div>
       </div>
-      <p class="cap"><b>Figure 2, animated.</b> Both panels follow the same sample. Each look-ahead pairs a possible final position with a category. Rewarding one category bends the continuous path too, because position and category are correlated in this toy distribution.</p>
-      <details class="more"><summary>How the animation is computed</summary>
-        <p class="cap">This three-component Gaussian mixture has one category per component and a known joint posterior. We follow the unguided flow to <i>t</i> = 0.30 and draw 18 joint endpoints conditional on that state. The selected category receives a log-reward of 3.6. The gray lines connect the current state to the sampled endpoints. The black and red trajectories integrate the base and reward-tilted velocities using the exact posterior means. In the learned model, multiMFM supplies the posterior samples.</p>
-      </details>
-    </figure>
-    <figure class="fig toy-figure">
-      <a href="assets/particles.png" aria-label="Open the particle experiment at full size"><img src="assets/particles.png" alt="From left to right, noisy particles, an unguided square of mixed colors, a Norwegian flag, and a smiley face." loading="lazy" width="1460" height="475"></a>
-      <figcaption class="cap"><b>Two rewards, one generator.</b> Each particle has a continuous position and a discrete color. The flag reward steers color while keeping the square shape. The smiley reward steers both position and color.</figcaption>
-    </figure>
-  </section>
-
-  <section class="block" id="properties" aria-labelledby="properties-title">
-    <p class="eyebrow">QM9</p>
-    <h2 id="properties-title">Can one sampler target two properties at once?</h2>
-    <p>We trained one multiMFM sampler for all six QM9 properties. To steer two properties together, we combined their target errors in a single reward. Across three property pairs, multiMFM lowered both errors and returned a higher fraction of structures passing PoseBusters checks than our TFG-Flow rerun.</p>
-    <div class="table-wrap">
-      <table class="results-table">
-        <caption>Joint energy-gap and dipole targets</caption>
-        <thead><tr><th scope="col">Method</th><th scope="col">Gap error<br><span>meV ↓</span></th><th scope="col">Dipole error<br><span>D ↓</span></th><th scope="col">PoseBusters<br><span>% passing ↑</span></th></tr></thead>
-        <tbody>
-          <tr><th scope="row">TFG-Flow</th><td>980.7</td><td>1.046</td><td>85.2</td></tr>
-          <tr class="our-row"><th scope="row">multiMFM</th><td>525.3</td><td>0.706</td><td>89.2</td></tr>
-        </tbody>
-      </table>
+      <div class="anim-stage steer" role="img" aria-label="Animation of the paper's Figure 2. One sample is followed from noise in two linked views: its continuous coordinate over flow time, and its discrete coordinate on a simplex. From the current state a fan of posterior look-aheads reaches the possible endpoints. The look-aheads that land on the rewarded mode turn rose, a gold arrow shows the reward gradient, and the steered path bends toward the rewarded mode while the dashed base path continues to another mode.">
+        <canvas class="bg"></canvas><canvas class="fg"></canvas>
+        <div class="steer-cap top" aria-hidden="true">Continuous coordinate <i>y</i></div>
+        <div class="steer-cap bottom" aria-hidden="true">Discrete coordinate <i>a</i></div>
+      </div>
+      <div class="anim-read" aria-live="off"></div>
+      <div class="anim-controls">
+        <button type="button" id="steer-play" class="btn btn-outline">Pause</button>
+        <button type="button" id="steer-new" class="btn btn-outline">New noise</button>
+        <span class="steer-pick"><span class="lab">reward on</span>
+          <span class="seg" id="steer-target" role="group" aria-label="Rewarded category">
+            <button type="button" data-k="0" aria-pressed="false"><i>e</i><sub>1</sub></button>
+            <button type="button" data-k="1" aria-pressed="false"><i>e</i><sub>2</sub></button>
+            <button type="button" data-k="2" class="on" aria-pressed="true"><i>e</i><sub>3</sub></button>
+            <button type="button" data-k="3" aria-pressed="false"><i>e</i><sub>4</sub></button>
+          </span>
+        </span>
+        <label for="steer-lam">reward strength &lambda; = <span id="steer-lam-val">5.0</span></label>
+        <input type="range" id="steer-lam" min="0" max="8" step="0.5" value="5" />
+        <div class="anim-legend">
+          <span><i class="ln dashed" style="border-color:#1D2D35"></i>base trajectory</span>
+          <span><i class="ln thick" style="border-color:#A01228"></i>steered trajectory</span>
+          <span><i class="ln thin" style="border-color:#6B7074"></i><span>posterior look-aheads <b>X</b><sub>0,1</sub>(&epsilon;;&nbsp;<em>t</em>,&nbsp;<em>x<sub>t</sub></em>)</span></span>
+          <span><i class="ln thin" style="border-color:#C8617A"></i>the ones that earn the reward</span>
+          <span><i class="ln thick" style="border-color:#DCA51F"></i><span>reward gradient &nabla;<em>V<sub>t</sub></em></span></span>
+          <span><i class="ln dashed" style="border-color:#2389C9"></i><span>one state <em>x<sub>t</sub></em>, both views</span></span>
+        </div>
+      </div>
+      <noscript><img src="assets/steering-schematic.png" width="1250" height="587" alt="Figure 2 of the paper: from a shared current state, posterior look-aheads reach the possible endpoints and the steered path leaves the dashed base path in both coordinates" /></noscript>
     </div>
-    <p class="cap">Mean absolute errors over all outputs. Each of three seeds produced 1,024 molecules per method.</p>
-
-    <h3>Do the molecules reach the requested polarizability?</h3>
-    <p>We compared each generated molecule’s requested polarizability with an independent estimate. For structures matching QM9, we used the existing DFT label at the optimized geometry. For unmatched structures, we used calibrated GFN2-xTB after adding hydrogens and relaxing the geometry.</p>
-    <figure class="fig result-figure">
-      <a href="assets/polarizability.png" aria-label="Open the polarizability figure at full size"><img src="assets/polarizability.png" alt="Computed polarizability tracks the requested value. Mean absolute error is 1.47 versus 8.97 after target shuffling for DFT and 4.04 versus 10.77 for calibrated xTB." width="1043" height="515" loading="lazy"></a>
-      <figcaption class="cap"><b>Each dot is one structure.</b> Distance from the diagonal gives its target error. Randomly reassigning targets within each group raised the error for both the 117 QM9 matches and the 180 unmatched structures.</figcaption>
+    <details class="more">
+      <summary>What the animation shows</summary>
+      <p class="cap">The animated version of Figure 2 in the paper, computed live on a toy with a closed-form posterior. The data has four components: a Gaussian mode in <i>y</i>, each paired with one vertex <i>e<sub>k</sub></i> of the simplex, which for four categories is a tetrahedron. Noise is Gaussian in both coordinates, drawn below the simplex for legibility as in the paper&rsquo;s figure, and the base flow follows the linear interpolant <i>x<sub>t</sub></i> = (1&nbsp;&minus;&nbsp;<i>t</i>)<i>x</i><sub>0</sub> + <i>t&thinsp;x</i><sub>1</sub> with its exact velocity.
+        <b>Left:</b> the continuous coordinate, with flow time running from the noise density <i>p</i><sub>0</sub> at the front to the data density <i>p</i><sub>1</sub> at the back. <b>Right:</b> the discrete coordinate of the same sample, moving from the noise cloud to a vertex. The dashed blue line joins the two views of the one state <i>x<sub>t</sub></i> = (<i>y<sub>t</sub></i>, <i>a<sub>t</sub></i>).
+        <b>Look-aheads:</b> the thin lines are 32 joint draws (<i>y</i><sub>1</sub>, <i>a</i><sub>1</sub>) from the posterior <i>p</i><sub>1|<i>t</i></sub>(&middot;&thinsp;|&thinsp;<i>x<sub>t</sub></i>), made from fixed noises &epsilon;<sub><i>i</i></sub> so that they move continuously with the state, as the outputs of a Meta Flow Map do. Each line in the left view has a partner in the right view. The fan is wide early on and closes as the sample commits.
+        <b>Steering:</b> at <i>t</i> = 0.28 the reward <i>r</i>(<i>x</i><sub>1</sub>) = &lambda; for look-aheads ending on the chosen category is switched on. Those look-aheads turn rose, and the gold arrows show the paper&rsquo;s gradient-free estimate of the value gradient: the reward-weighted mean of the look-aheads minus their plain mean. The red path adds that correction to the base velocity; the dashed path is the same noise without it. Because position and category are coupled, rewarding a category bends the continuous path as well.
+        At &lambda; = 0 the two paths coincide, and a draw with no look-ahead on the rewarded mode cannot be steered. Each loop ends on a still composed like the paper&rsquo;s figure. In the QM9 and DNA experiments the look-aheads come from the learned map, 32 per step.</p>
+    </details>
+    <figure class="fig medium toy">
+      <a href="assets/particles.png"><img src="assets/particles.png" width="1460" height="475" alt="Four panels of coloured particles: Gaussian noise, an unguided square of mixed colours, the same square recoloured as a Norwegian flag, and a smiley face" loading="lazy" decoding="async" /></a>
+      <figcaption class="cap"><b>Two rewards, one generator.</b> Each particle has a continuous position and a discrete colour. The flag reward steers colour alone and keeps the square. The smiley reward steers position and colour together.</figcaption>
     </figure>
   </section>
 
-  <section class="block" id="dna" aria-labelledby="dna-title">
-    <p class="eyebrow">DNA</p>
-    <h2 id="dna-title">Steering a sequence toward a mechanical property</h2>
-    <p>For DNA we use a discrete Meta Flow Map, dMFM. One predictor guides sampling toward a requested cyclizability, a measure of how readily DNA forms a loop. A second predictor, trained on disjoint yeast sequences, evaluates the designs. At the +1 target, guidance reduced its mean absolute error from 1.174 to 0.153. At the −1 target, error fell from 0.833 to 0.117. Each comparison used 1,000 paired 50-base sequences.</p>
-    <h3>What does steering cost as sequences grow?</h3>
-    <p>In a separate four-motif task, we timed the fastest tested configurations meeting the same accuracy, diversity, and uniqueness criteria. At 400 bases and a target three standard deviations above the unguided mean, dMFM took 66.8 ms per output and Feynman–Kac steering took 194.5 ms on one H200.</p>
-    <figure class="fig result-figure">
-      <a href="assets/dna-scaling.png" aria-label="Open the DNA scaling figure at full size"><img src="assets/dna-scaling.png" alt="Sampling time increases with length at the three-standard-deviation target. At the five-standard-deviation target, dMFM stays below the normalized error cutoff of 0.5 at every tested length." width="1154" height="425" loading="lazy"></a>
-      <figcaption class="cap"><b>Fixed-quality scaling.</b> At the harder +5σ target, dMFM met all criteria from 50 to 400 bases. The blue curve shows the lowest error obtained by Feynman–Kac steering (FK) at each length. Error bars show standard deviations across three seeds.</figcaption>
-    </figure>
+  <section class="block reveal" id="method">
+    <p class="eyebrow">Method</p>
+    <h2>A value gradient from posterior samples</h2>
+    <p class="prose">To sample the reward-tilted distribution <i>p</i><sub>1</sub>(<i>x</i><sub>1</sub>)&thinsp;e<sup><i>r</i>(<i>x</i><sub>1</sub>)</sup> with a frozen flow model <i>b<sub>t</sub></i>, it is enough to add the gradient of a value function to its velocity. The value function is an expectation over the endings still reachable from <i>x<sub>t</sub></i>, which is exactly what a Meta Flow Map samples.</p>
+    <div class="box">
+      <img class="eq tall" src="assets/eq/eq_steer.svg" alt="X-dot-t equals b_t(X_t) plus sigma_t squared over two times the gradient of V_t(X_t), where V_t(x_t) is the log of the expectation of e to the r(X_1) given X_t equals x_t" />
+      <img class="eq tall" src="assets/eq/eq_mc.svg" alt="The estimated gradient of V_t at x_t equals the gradient with respect to x_t of the log of the average over N noises epsilon_i of exp r of the Meta Flow Map X_{0,1}(epsilon_i; t, x_t)" />
+    </div>
+    <div class="algo">
+      <div class="algo-head">Algorithm 1 <span>Steering a frozen generator with a multimodal Meta Flow Map</span></div>
+<pre>sample x_0 ~ p_0
+for k = 0, ..., T - 1:
+    # N joint look-aheads (y_1, a_1) from the posterior p_{1|t}(&middot; | x_k), one map call each
+    x1_i = X_{0,1}(&epsilon;_i ; t_k, x_k),   &epsilon;_i ~ N(0, I),   i = 1, ..., N
+    # value gradient from their rewards, one part per modality
+    g = &nabla;_x log (1/N) &Sigma;_i exp r(x1_i)
+    # frozen base velocity plus guidance; C is the guidance window and gradient cap
+    x_{k+1} = x_k + (t_{k+1} - t_k) [ b_{t_k}(x_k) + &gamma; C_{t_k}(g) ]
+return x_T</pre>
+    </div>
+    <details class="more">
+      <summary>How the pieces fit, in three steps</summary>
+      <div class="steps">
+        <div><p><span class="lead">The tilted sampler.</span> For the linear interpolant with a Gaussian source, the ODE above with &sigma;<sub><i>t</i></sub><sup>2</sup> = 2(1&nbsp;&minus;&nbsp;<i>t</i>)/<i>t</i> samples the tilted distribution exactly when the drift and the value function are exact. Learned maps, finite <i>N</i>, discretization and the practical window and cap <i>C<sub>t</sub></i> introduce approximation error.</p></div>
+        <div><p><span class="lead">Discrete Meta Flow Maps.</span> A discrete flow carries Gaussian noise to the vertices of a simplex, one vertex per token. We extend GLASS posterior sampling to this setting and distill its inner flow into a one-shot map, dMFM, parameterized by a denoiser that stays on the simplex and trained with a diagonal loss plus Eulerian self-distillation.</p></div>
+        <div><p><span class="lead">Joint look-aheads.</span> multiMFM pairs a continuous MFM with a dMFM. Both parts see the joint inner and outer state, so no independence between modalities is assumed, and each modality is steered by its own partial gradient of the one value function.</p></div>
+      </div>
+      <img class="eq" src="assets/eq/eq_multi.svg" alt="The multimodal Meta Flow Map X_{s,u} of the inner states y-bar_s and a-bar_s, given t, y_t and a_t, is the pair of a continuous map Phi-c and a discrete map X-d, each a function of all of these" />
+      <p class="cap">For hard-token DNA sequences the paper also uses a gradient-free form of the estimator: a softmax of the rewards weights the look-aheads, with no derivative of the reward or the sampler. That is the form the animation above draws.</p>
+    </details>
   </section>
 
-  <section class="block" id="cite" aria-labelledby="cite-title">
-    <div class="cite-head"><h2 id="cite-title">Citation</h2><button type="button" id="copy" hidden>Copy BibTeX</button></div>
-    <pre class="bib" id="bibtex">@misc{unneberg2026multimfm,
-  title  = {Scalable Inference-time Steering in Biological Design
-            with Multimodal Meta Flow Maps},
-  author = {Unneberg, Ulrik and Wang, Shiyi and Franceschi, Dinko
-            and Xiong, Ziyu and Kozinsky, Boris and Zhong, Ellen D.
-            and Albergo, Michael S.},
-  year   = {2026},
-  note   = {Preprint}
+  <section class="block reveal" id="results">
+    <p class="eyebrow">Results</p>
+    <h2>Molecules and DNA, one sampler each</h2>
+    <p class="prose"><b class="sf">Molecular properties on QM9.</b> One multiMFM posterior sampler, distilled in 2.5 hours on one H100, serves every property objective. Its error is below the published TFG-Flow reference on all six properties. To steer two properties at once we add their squared errors in a single reward: when targeting the energy gap and the dipole moment together, gap error falls from 981 to 525 meV and dipole error from 1.046 to 0.706 D relative to our TFG-Flow rerun, with more structures passing PoseBusters checks.</p>
+    <figure class="fig medium">
+      <a href="assets/polarizability.png"><img src="assets/polarizability.png" width="1043" height="515" alt="Two scatter plots of computed against requested polarizability. With QM9 DFT labels the target error is 1.47 against 8.97 after shuffling the targets; with calibrated xTB it is 4.04 against 10.77" loading="lazy" decoding="async" /></a>
+      <figcaption class="cap"><b>Do the molecules reach the requested polarizability?</b> An independent quantum-mechanical check: each dot is one generated structure, and its distance from the diagonal is its target error. Left, 117 structures that match QM9, scored with their DFT labels. Right, 180 unmatched structures, scored with calibrated GFN2-xTB after adding hydrogens and relaxing the geometry. Shuffling the targets raises the error in both groups. The errors are larger than the learned oracle reports.</figcaption>
+    </figure>
+    <p class="prose" style="margin-top:1.6rem"><b class="sf">DNA sequences.</b> For DNA we use the discrete map, dMFM. One predictor guides 50-base sequences toward a requested cyclizability, a measure of how readily DNA forms a loop, and a second predictor trained on disjoint parent sequences scores the designs. Error falls from 1.174 to 0.153 at the +1 target and from 0.833 to 0.117 at the &minus;1 target. In a separate four-motif task we time each method at the fastest tested setting that meets fixed accuracy, diversity and uniqueness criteria.</p>
+    <figure class="fig medium">
+      <a href="assets/dna-scaling.png"><img src="assets/dna-scaling.png" width="1154" height="425" alt="Left: sampling time per output against sequence length at the three-sigma target, where dMFM stays below Feynman-Kac steering. Right: normalized error at the five-sigma target, where dMFM stays under the cutoff of 0.5 and Feynman-Kac steering does not" loading="lazy" decoding="async" /></a>
+      <figcaption class="cap"><b>DNA steering at fixed quality.</b> Left: at a target three standard deviations above the unguided mean, dMFM takes 66.8 ms per output at 400 bases and Feynman&ndash;Kac steering (FK) 194.5 ms. Right: at five standard deviations dMFM meets every criterion from 50 to 400 bases, while FK misses the accuracy cutoff (dotted) at every tested budget. Means and standard deviations over three seeds.</figcaption>
+    </figure>
+    <details class="more">
+      <summary>Full tables</summary>
+      <p class="cap above"><span class="lab">Table 1</span> <b>QM9 property guidance,</b> mean absolute error. Energies in meV. Published reference values are from the TFG-Flow benchmark and use different generators. Our rows include every output: mean &plusmn; SD over three seeds of 1,024 molecules. multiMFM-SS adds steer-search over late endpoint predictions.</p>
+      <div class="table-wrap">
+        <table class="results">
+          <thead><tr><th>method</th><th class="num"><i>C<sub>v</sub></i> &darr;</th><th class="num">&mu; &darr;</th><th class="num">&alpha; &darr;</th><th class="num">&Delta;&epsilon; &darr;</th><th class="num">&epsilon;<sub>HOMO</sub> &darr;</th><th class="num">&epsilon;<sub>LUMO</sub> &darr;</th></tr></thead>
+          <tbody>
+            <tr class="group"><td colspan="7">Reference levels</td></tr>
+            <tr><td>Upper bound</td><td class="num">6.87</td><td class="num">1.61</td><td class="num">8.98</td><td class="num">1464</td><td class="num">645</td><td class="num">1457</td></tr>
+            <tr><td>#Atoms</td><td class="num">1.97</td><td class="num">1.05</td><td class="num">3.86</td><td class="num">886</td><td class="num">426</td><td class="num">813</td></tr>
+            <tr><td>Lower bound</td><td class="num">0.040</td><td class="num">0.043</td><td class="num">0.09</td><td class="num">65</td><td class="num">39</td><td class="num">36</td></tr>
+            <tr class="group"><td colspan="7">Conditional models</td></tr>
+            <tr><td>Cond-EDM</td><td class="num">1.065</td><td class="num">1.123</td><td class="num">2.78</td><td class="num">671</td><td class="num">371</td><td class="num">601</td></tr>
+            <tr><td>EEGSDE</td><td class="num">0.941</td><td class="num">0.777</td><td class="num">2.50</td><td class="num">487</td><td class="num">302</td><td class="num">447</td></tr>
+            <tr><td>UniGEM</td><td class="num">0.873</td><td class="num">0.805</td><td class="num">2.22</td><td class="num">511</td><td class="num">233</td><td class="num">592</td></tr>
+            <tr><td>Cond-Flow</td><td class="num">1.52</td><td class="num">0.962</td><td class="num">3.10</td><td class="num">805</td><td class="num">435</td><td class="num">693</td></tr>
+            <tr class="group"><td colspan="7">Training-free guidance</td></tr>
+            <tr><td>DPS</td><td class="num">5.26</td><td class="num">63.2</td><td class="num">51169</td><td class="num">1380</td><td class="num">744</td><td class="num dash">NA</td></tr>
+            <tr><td>LGD</td><td class="num">3.77</td><td class="num">1.51</td><td class="num">7.15</td><td class="num">1190</td><td class="num">664</td><td class="num">1200</td></tr>
+            <tr><td>FreeDoM</td><td class="num">2.84</td><td class="num">1.35</td><td class="num">5.92</td><td class="num">1170</td><td class="num">623</td><td class="num">1160</td></tr>
+            <tr><td>MPGD</td><td class="num">2.86</td><td class="num">1.51</td><td class="num">4.26</td><td class="num">1070</td><td class="num">554</td><td class="num">1060</td></tr>
+            <tr><td>UGD</td><td class="num">3.02</td><td class="num">1.56</td><td class="num">5.45</td><td class="num">1150</td><td class="num">582</td><td class="num">1270</td></tr>
+            <tr><td>TFG</td><td class="num">2.77</td><td class="num">1.33</td><td class="num">3.90</td><td class="num">893</td><td class="num">568</td><td class="num">984</td></tr>
+            <tr><td>TFG-Flow</td><td class="num">1.75</td><td class="num">0.817</td><td class="num">2.32</td><td class="num">804</td><td class="num">364</td><td class="num">941</td></tr>
+            <tr class="ours"><td>multiMFM</td><td class="num">0.445 &plusmn; 0.010</td><td class="num">0.592 &plusmn; 0.011</td><td class="num">1.103 &plusmn; 0.091</td><td class="num">494 &plusmn; 11</td><td class="num">246 &plusmn; 2</td><td class="num">322 &plusmn; 15</td></tr>
+            <tr class="ours"><td>multiMFM-SS</td><td class="num">0.431 &plusmn; 0.010</td><td class="num">0.575 &plusmn; 0.015</td><td class="num">1.020 &plusmn; 0.054</td><td class="num">470 &plusmn; 7</td><td class="num">243 &plusmn; 7</td><td class="num">278 &plusmn; 14</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap above"><span class="lab">Table 2</span> <b>Steering two QM9 properties at once.</b> Mean &plusmn; SD across three seeds, all 1,024 outputs per seed. The first error is in cal/(mol&thinsp;K) for <i>C<sub>v</sub></i>, meV for the gap and Bohr<sup>3</sup> for &alpha;; dipole error in debye. PB: percentage of returned molecules passing PoseBusters. TFG-Flow is our rerun.</p>
+      <div class="table-wrap">
+        <table class="results">
+          <thead><tr><th>targets</th><th>method</th><th class="num">first-property MAE &darr;</th><th class="num">dipole MAE &darr;</th><th class="num">PB (%) &uarr;</th></tr></thead>
+          <tbody>
+            <tr><td><i>C<sub>v</sub></i>, &mu;</td><td>TFG-Flow</td><td class="num">1.956 &plusmn; 0.015</td><td class="num">1.030 &plusmn; 0.034</td><td class="num">83.1 &plusmn; 1.3</td></tr>
+            <tr class="ours"><td></td><td>multiMFM</td><td class="num">0.668 &plusmn; 0.012</td><td class="num">0.682 &plusmn; 0.016</td><td class="num">91.0 &plusmn; 0.5</td></tr>
+            <tr class="ours"><td></td><td>multiMFM-SS</td><td class="num">0.625 &plusmn; 0.010</td><td class="num">0.655 &plusmn; 0.010</td><td class="num">95.5 &plusmn; 0.5</td></tr>
+            <tr><td>&Delta;&epsilon;, &mu;</td><td>TFG-Flow</td><td class="num">980.7 &plusmn; 29.6</td><td class="num">1.046 &plusmn; 0.055</td><td class="num">85.2 &plusmn; 1.2</td></tr>
+            <tr class="ours"><td></td><td>multiMFM</td><td class="num">525.3 &plusmn; 11.2</td><td class="num">0.706 &plusmn; 0.021</td><td class="num">89.2 &plusmn; 0.9</td></tr>
+            <tr class="ours"><td></td><td>multiMFM-SS</td><td class="num">484.5 &plusmn; 8.2</td><td class="num">0.670 &plusmn; 0.019</td><td class="num">95.1 &plusmn; 0.1</td></tr>
+            <tr><td>&alpha;, &mu;</td><td>TFG-Flow</td><td class="num">2.609 &plusmn; 0.238</td><td class="num">1.169 &plusmn; 0.034</td><td class="num">85.8 &plusmn; 1.2</td></tr>
+            <tr class="ours"><td></td><td>multiMFM</td><td class="num">1.380 &plusmn; 0.002</td><td class="num">0.723 &plusmn; 0.022</td><td class="num">88.7 &plusmn; 1.1</td></tr>
+            <tr class="ours"><td></td><td>multiMFM-SS</td><td class="num">1.352 &plusmn; 0.034</td><td class="num">0.689 &plusmn; 0.016</td><td class="num">95.4 &plusmn; 0.8</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="two-tables">
+        <div>
+          <p class="cap above"><span class="lab">Table 3</span> <b>GEOM-Drugs fingerprint guidance.</b> Directly counted FP2 Tanimoto; SEM across three pooled replicates of 4,096 molecules. TFG-Flow values are published and use a different generator.</p>
+          <div class="table-wrap">
+            <table class="results">
+              <thead><tr><th class="num">atom cap</th><th>method</th><th class="num">Tanimoto &uarr;</th><th class="num">PB (%)</th></tr></thead>
+              <tbody>
+                <tr><td class="num">71</td><td>Base generator</td><td class="num">0.2288 &plusmn; 0.0006</td><td class="num">87.5 &plusmn; 0.2</td></tr>
+                <tr class="ours"><td class="num">71</td><td>multiMFM</td><td class="num">0.2760 &plusmn; 0.0016</td><td class="num">89.5 &plusmn; 0.3</td></tr>
+                <tr><td class="num">30</td><td>Base generator</td><td class="num">0.2259 &plusmn; 0.0004</td><td class="num">87.5 &plusmn; 0.2</td></tr>
+                <tr class="ours"><td class="num">30</td><td>multiMFM</td><td class="num">0.2488 &plusmn; 0.0005</td><td class="num">89.0 &plusmn; 0.5</td></tr>
+                <tr><td class="num">30</td><td>TFG-Flow base</td><td class="num">0.170 &plusmn; 0.001</td><td class="num dash">&ndash;</td></tr>
+                <tr><td class="num">30</td><td>TFG-Flow guided</td><td class="num">0.208 &plusmn; 0.002</td><td class="num dash">&ndash;</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <p class="cap above"><span class="lab">Table 4</span> <b>DNA cyclizability,</b> scored by the independent oracle. 1,000 noise-paired sequences per target, one dMFM step, 32 posterior draws; 95% bootstrap intervals in brackets.</p>
+          <div class="table-wrap">
+            <table class="results">
+              <thead><tr><th class="num">target</th><th class="num">unguided MAE</th><th class="num">guided MAE &darr;</th><th class="num">pairs improved</th></tr></thead>
+              <tbody>
+                <tr><td class="num">+1</td><td class="num">1.174 [1.149, 1.200]</td><td class="num">0.153 [0.146, 0.161]</td><td class="num">98.3%</td></tr>
+                <tr><td class="num">&minus;1</td><td class="num">0.833 [0.806, 0.857]</td><td class="num">0.117 [0.111, 0.123]</td><td class="num">97.2%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <p class="cap">These gains depend on the target and on how quality is measured. On GEOM-Drugs, search is competitive for mild geometric targets, and the DNA scores come from a learned predictor: the cyclizability of the generated sequences has not been measured.</p>
+    </details>
+  </section>
+
+  <section class="block reveal" id="cite">
+    <p class="eyebrow">Citation</p>
+<pre class="bib">@article{unneberg2026multimfm,
+  title   = {Scalable Inference-time Steering in Biological Design
+             with Multimodal Meta Flow Maps},
+  author  = {Unneberg, Ulrik and Wang, Shiyi and Franceschi, Dinko and Xiong, Ziyu
+             and Kozinsky, Boris and Zhong, Ellen D. and Albergo, Michael S.},
+  journal = {arXiv preprint},
+  year    = {2026}
 }</pre>
-    <span id="copy-status" role="status"></span>
+    <p class="cap">Code is on <a href="https://github.com/shiyiwang958/MultiMFM" target="_blank" rel="noopener">GitHub</a>; the arXiv link will be added when the paper is posted.</p>
   </section>
-  <footer><p><a href="../../">Ulrik Unneberg</a> &middot; Harvard University &middot; 2026</p></footer>
+
+  <footer>
+    <p><a href="/">Ulrik Unneberg</a> &middot; Harvard University &middot; 2026</p>
+  </footer>
+
 </main>
+<script src="assets/steer_anim.js?v=3"></script>
+<script src="../sbm/assets/page.js"></script>
 </body>
 </html>
