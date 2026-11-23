@@ -427,19 +427,22 @@
       // p1(y1) standing on t = 1, with the rewarded component tinted
       const dens = (f, t) => { const pts = [PL(-YR, t)]; for (let i = 0; i <= 240; i++) { const y = -YR + 2 * YR * i / 240; pts.push(PL(y, t, f(y))); } pts.push(PL(YR, t)); return pts; };
       poly(dens(p1y, 1)); ctx.closePath(); ctx.fillStyle = C.p1Fill; ctx.fill();
-      if (on) {
-        const a = clamp01(this.lam / 4);
-        poly(dens(y => W_K[tg] * gaussPdf(y, MU[tg], SD[tg]), 1)); ctx.closePath();
-        ctx.fillStyle = rgba(RED, 0.30 * a); ctx.fill();
-      }
       poly(dens(p1y, 1).slice(1, -1)); ctx.strokeStyle = C.p1Line; ctx.lineWidth = 1.6 * px; ctx.stroke();
+      // the reward, as in the paper's figure: a bell over the rewarded mode, narrower than the data mode and
+      // standing a little above it. The tilt itself is on the category; this is drawn at a readable height.
+      this.rbell = null;
       if (on) {
-        const lo = MU[tg] - 3.2 * SD[tg], hi = MU[tg] + 3.2 * SD[tg], pts = [];
-        for (let i = 0; i <= 80; i++) { const y = lo + (hi - lo) * i / 80; pts.push(PL(y, 1, p1y(y))); }
-        poly(pts); ctx.strokeStyle = C.red; ctx.lineWidth = 1.9 * px; ctx.stroke();
+        const a = clamp01(this.lam / 4), rs = 0.66 * SD[tg], rh = 1.36 * p1y(MU[tg]);
+        const bell = y => rh * Math.exp(-0.5 * (y - MU[tg]) * (y - MU[tg]) / (rs * rs));
+        poly(dens(bell, 1)); ctx.closePath(); ctx.fillStyle = rgba(ROSE, 0.34 * a); ctx.fill();
+        const lo = MU[tg] - 3.4 * rs, hi = MU[tg] + 3.4 * rs, pts = [];
+        for (let i = 0; i <= 120; i++) { const y = lo + (hi - lo) * i / 120; pts.push(PL(y, 1, bell(y))); }
+        poly(pts); ctx.strokeStyle = rgba(RED, 0.88 * a); ctx.lineWidth = 2 * px; ctx.stroke();
+        this.rbell = { f: bell, rs, rh };
       }
       for (let k = 0; k < K; k++) {
-        q = PL(MU[k], 1, p1y(MU[k]));
+        const top = on && k === tg ? Math.max(p1y(MU[k]), this.rbell.rh) : p1y(MU[k]);
+        q = PL(MU[k], 1, top);
         mtext(ctx, TX.ae(k), q[0], q[1] - 0.5 * fs, 0.74 * fs, on && k === tg ? C.red : C.p1Text, "center", C.halo);
       }
       q = PL(MU[0] - 0.85, 1, 0.56); mtext(ctx, TX.p1y, q[0], q[1], 1.14 * fs, C.p1Text, "center");
@@ -472,11 +475,13 @@
 
       // r(x1): one reward, read on both coordinates
       if (on) {
-        const bump = PL(MU[tg] + 1.35 * SD[tg], 1, p1y(MU[tg] + 1.35 * SD[tg]));   // on the flank, below the a1 = e_k label
+        const by = MU[tg] + 1.15 * this.rbell.rs;                       // on the bell's flank, below the a1 = e_k label
+        const bump = PL(by, 1, this.rbell.f(by));
         const b = this.ballAt[tg];
         const corner = [b.p[0] + 0.30 * (cen[0] - b.p[0]), b.p[1] + 0.30 * (cen[1] - b.p[1])];
         if (this.wide) {
-          const lx = this.L.x + this.L.w * 0.93, ly = 0.085 * H;
+          // keep the label near its own bump, so the leader does not cross the other mode labels
+          const lx = Math.max(this.L.x + 0.42 * this.L.w, Math.min(this.L.x + 0.97 * this.L.w, bump[0] + 0.20 * this.L.w)), ly = 0.085 * H;
           ctx.strokeStyle = rgba(RED, 0.85); ctx.lineWidth = 1 * px;
           poly([[lx - 0.9 * fs, ly + 0.35 * fs], bump]); ctx.stroke();
           poly([[lx + 0.9 * fs, ly + 0.35 * fs], corner]); ctx.stroke();
