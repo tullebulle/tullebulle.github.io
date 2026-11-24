@@ -507,3 +507,8 @@ details.more .cap { text-align: justify; hyphens: auto; -webkit-hyphens: auto; }
 .anim-legend span { white-space: normal; }
 .anim-legend { line-height: 1.35; }
 .resources .lead { margin-bottom: 0.2rem; }
+
+/* overview video above the abstract (24 Nov 2026) */
+.headline-video { margin: 0; }
+.headline-video video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--box); border: 1px solid var(--line); border-radius: 8px; }
+#overview { margin-top: 2.4rem; }
