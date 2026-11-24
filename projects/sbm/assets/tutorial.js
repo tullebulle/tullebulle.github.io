@@ -1,6 +1,13 @@
 /* Diagrams of the Beckmann-map tutorial (projects/sbm/tutorial/). Built on the five-atom toy of btm_anim.js (window.BTMToy):
    the exact flow-matching field b_t, the exact autonomous current b = J / nu on the shipped grid (assets/btm_fields.js) and its
    basins. Diagrams, in page order:
+   Part I, the intuition (auto-playing while on screen, no controls needed):
+     i-flow   flow matching generating: 300 noise draws follow the exact b_t in 20 Euler steps, the arrows of b_t change with t,
+              one sample leaves a dot at every network call;
+     i-steps  the same with 1 / 2 / 4 / 8 steps, cycling: one step puts every sample on the data mean;
+     i-fixed  the autonomous field: fixed flow lines, particles flowing, then the basins and their masses;
+     i-race   the same noise: flow matching with 8 calls against the map with one.
+   Part II, the math:
      1 "pairs"    the interpolant I_t = (1 - t) x0 + t x1 of random pairs, slider t, re-pair button;
      2 "field"    the flow-matching field b_t(x) on a lattice, slider t, hover shows the posterior mean z_t(x);
      3 "auto"     the autonomous field: streamlines, particles flowing, hover follows one flow line, basins toggle;
@@ -120,6 +127,199 @@
   function read(root) { return root.querySelector(".anim-read"); }
   const ease = u => u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
 
+  // ================= Part I: the intuition. Auto-playing loops that run only while on screen =================
+  function loop(step) {
+    let on = false, raf = 0, last = null;
+    function f(now) { if (!on) return; const dt = last === null ? 0 : Math.min((now - last) / 1000, 0.05); last = now; step(dt); raf = requestAnimationFrame(f); }
+    return { start() { if (on) return; on = true; last = null; raf = requestAnimationFrame(f); }, stop() { on = false; cancelAnimationFrame(raf); } };
+  }
+  function onScreen(el, L) {
+    if (reduced) return;
+    if (!("IntersectionObserver" in global)) { L.start(); return; }
+    new IntersectionObserver(es => { for (const e of es) { if (e.isIntersecting) L.start(); else L.stop(); } }, { rootMargin: "80px 0px" }).observe(el);
+  }
+  const clamp01 = u => Math.min(1, Math.max(0, u));
+  const smooth = (a, b, x) => { const u = clamp01((x - a) / (b - a)); return u * u * (3 - 2 * u); };
+  const GREY_RGB = hex2rgb(GREY), ATOM_RGB = ATOMS.map(a => hex2rgb(a.c));
+  function tone(k, w, alpha) {   // grey (w = 0) to the colour of atom k (w = 1)
+    const a = ATOM_RGB[k], c = a.map((v, i) => Math.round(w * v + (1 - w) * GREY_RGB[i]));
+    return alpha === undefined ? `rgb(${c})` : `rgba(${c},${alpha})`;
+  }
+  function posAt(P, prog) {   // a polyline of Euler steps at fractional step prog
+    const n = P.length - 1, k = Math.min(n - 1, Math.max(0, Math.floor(prog))), u = clamp01(prog - k);
+    return [P[k][0] + (P[k + 1][0] - P[k][0]) * u, P[k][1] + (P[k + 1][1] - P[k][1]) * u];
+  }
+  function landed(p) { return distToAtoms(p[0], p[1]) < 0.1 ? nearestAtom(p[0], p[1]) : -1; }
+  let DESTS = null;   // the map's destination of each of the 300 noise draws (exact autonomous flow)
+  function dests() { if (!DESTS && FG.ready) DESTS = X0.map(x => mapDest(x[0], x[1])); return DESTS; }
+  function fieldArrows(st, c, s) {   // directions of b_s on a 13 x 13 lattice
+    const n = 13, L = 0.24;
+    for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) {
+      let x = -2.3 + 4.6 * a / (n - 1), y = -2.3 + 4.6 * b / (n - 1); const x0 = x, y0 = y;
+      for (let k = 0; k < 8; k++) { const v = bFM(x, y, s), m = Math.hypot(v[0], v[1]) || 1; x += (L / 8) * v[0] / m; y += (L / 8) * v[1] / m; }
+      st.arrow(c, [x0, y0], [x, y], "rgba(78,76,70,0.42)", 1.2, 5);
+    }
+  }
+  function basinLayer(st) {   // the basin tints and separatrices, rendered once per stage size
+    const off = document.createElement("canvas"); off.width = st.W; off.height = st.H;
+    const c = off.getContext("2d"); st.basins(c); st.seps(c); return off;
+  }
+
+  // ---------- I.1 flow matching generating, 20 Euler steps of the exact b_t ----------
+  function initFlowIntro() {
+    const root = document.getElementById("i-flow"); if (!root) return;
+    const st = makeStage(root), calls = root.querySelector(".calls"), tnow = root.querySelector(".tnow");
+    const M = 20, HI = 59, paths = X0.map(x => eulerPath(x, M)), dest = paths.map(P => nearestAtom(P[M][0], P[M][1]));
+    const RUN = 6.0, HOLD = 2.4, FADE = 0.7;
+    root.querySelector(".ncalls").textContent = M;
+    let clock = reduced ? RUN : 0, bgS = -1;
+    function draw() {
+      const t = clamp01(clock / RUN), prog = t * M, s = Math.min(t, 0.97), fade = 1 - smooth(RUN + HOLD, RUN + HOLD + FADE, clock);
+      if (bgS < 0 || Math.abs(s - bgS) > 0.003) { const c = st.clear("bg", CREAM); fieldArrows(st, c, s); st.atoms(c, false); st.frame(c); bgS = s; }
+      const c = st.clear("fg"), w = smooth(0.35, 0.95, t);
+      c.globalAlpha = fade;
+      for (let i = 0; i < N; i++) {
+        if (i === HI) continue;
+        const P = paths[i], p = posAt(P, prog);
+        if (prog > 0 && t < 1) st.line(c, [posAt(P, Math.max(0, prog - 1.2)), p], 1.2, tone(dest[i], w, 0.35));
+        st.dot(c, p[0], p[1], 2.1, tone(dest[i], w));
+      }
+      const P = paths[HI], k = Math.min(M - 1, Math.floor(prog)), p = posAt(P, prog), pts = P.slice(0, k + 1).concat([p]);
+      st.line(c, pts, 4.2, "rgba(255,255,255,0.85)"); st.line(c, pts, 1.7, INK);
+      for (let j = 0; j <= k; j++) st.dot(c, P[j][0], P[j][1], 2.4, INK);   // one dot where each network call was made
+      st.dot(c, p[0], p[1], 4.8, "#ffffff", INK);
+      c.globalAlpha = 1;
+      calls.textContent = Math.min(M, Math.floor(prog) + 1); tnow.textContent = t.toFixed(2);
+    }
+    const L = loop(dt => { clock += dt; if (clock > RUN + HOLD + FADE) clock = 0; draw(); });
+    onScreen(st.el, L); draw();
+    return { redraw() { bgS = -1; draw(); } };
+  }
+
+  // ---------- I.2 one, two, four, eight steps ----------
+  function initSteps() {
+    const root = document.getElementById("i-steps"); if (!root) return;
+    const st = makeStage(root), rd = read(root), btns = [...root.querySelectorAll(".seg button")], NS = btns.map(b => parseInt(b.dataset.n, 10));
+    const MEAN = [0, 1].map(d => ATOMS.reduce((acc, a) => acc + a.p * a.z[d], 0)), cache = {}, HOLD = 2.8;
+    const paths = n => cache[n] || (cache[n] = X0.map(x => eulerPath(x, n)));
+    const per = n => Math.max(0.32, Math.min(0.9, 2.4 / n));
+    let idx = 0, auto = true, clock = 0;
+    function bg() { const c = st.clear("bg", CREAM); st.atoms(c, false); st.frame(c); }
+    function draw() {
+      const n = NS[idx], P = paths(n), prog = Math.min(n, clock / per(n)), end = reduced || prog >= n, pr = end ? n : prog, k = Math.min(n - 1, Math.floor(pr));
+      const c = st.clear("fg");
+      for (let i = 0; i < N; i++) st.line(c, P[i].slice(0, k + 1).concat([posAt(P[i], pr)]), 0.7, rgba(CHARCOAL, 0.16));
+      let off = 0;
+      for (let i = 0; i < N; i++) { const p = posAt(P[i], pr), a = end ? landed(p) : -1; if (end && a < 0) off++; st.dot(c, p[0], p[1], 2.1, a >= 0 ? ATOMS[a].c : GREY); }
+      if (end && n === 1) { st.dot(c, MEAN[0], MEAN[1], 5.5, "#ffffff", INK); st.label(c, "the average of the data", MEAN[0] + 0.05, MEAN[1] - 0.34, INK); }
+      btns.forEach((b, j) => b.classList.toggle("on", j === idx));
+      if (!end) rd.innerHTML = `step ${k + 1} of ${n}`;
+      else if (n === 1) rd.innerHTML = "1 network call: every sample lands on the average of the data";
+      else rd.innerHTML = `${n} network calls: ${off ? `${Math.round(100 * off / N)} % of the samples are still off the data` : "every sample is on a data point"}`;
+    }
+    btns.forEach((b, j) => b.addEventListener("click", () => { idx = j; auto = false; clock = 0; draw(); L.start(); }));
+    const L = loop(dt => {
+      const n = NS[idx]; clock += dt;
+      if (clock > per(n) * n + HOLD) { if (auto) { idx = (idx + 1) % NS.length; clock = 0; } else { clock = per(n) * n; draw(); L.stop(); return; } }
+      draw();
+    });
+    onScreen(st.el, L); bg(); draw();
+    return { redraw() { bg(); draw(); } };
+  }
+
+  // ---------- I.3 the autonomous field: fixed flow lines, then the basins ----------
+  function initFixed() {
+    const root = document.getElementById("i-fixed"); if (!root) return;
+    const st = makeStage(root), rd = read(root);
+    const FLOW = 7.0, SHOW = 1.2, HOLD = 3.6, FADE = 0.8;
+    let streams = null, layer = null, clock = 0, tAll = null, shown = -1;
+    const parts = X0.map(d => ({ x: d[0], y: d[1], px: d[0], py: d[1], d0: 1, done: false }));
+    function reset() {
+      const D = dests(); if (!D) return;
+      for (let i = 0; i < N; i++) { const p = parts[i], z = ATOMS[D[i]].z; p.x = p.px = X0[i][0]; p.y = p.py = X0[i][1]; p.done = false; p.d0 = Math.hypot(p.x - z[0], p.y - z[1]) || 1; }
+      clock = 0; tAll = null; st.clear("fg");
+    }
+    function bg(a) {   // a = opacity of the basins
+      const c = st.clear("bg", CREAM);
+      if (a > 0 && BAS.done) { if (!layer) layer = basinLayer(st); c.globalAlpha = a; c.drawImage(layer, 0, 0); c.globalAlpha = 1; }
+      if (!streams && FG.ready) streams = streamlines();
+      if (streams) for (const pts of streams) st.line(c, pts, 0.9, a > 0 ? `rgba(255,255,255,${0.75 * a})` : "rgba(60,58,54,0.32)");
+      if (a < 1 && streams && a > 0) for (const pts of streams) st.line(c, pts, 0.9, `rgba(60,58,54,${0.32 * (1 - a)})`);
+      st.atoms(c, false); st.frame(c); shown = a;
+    }
+    function fg(dt) {
+      const c = st.ctx("fg"), dpr = st.dpr, D = dests(); if (!D) return;
+      const fade = tAll === null ? 1 : 1 - smooth(tAll + SHOW + HOLD, tAll + SHOW + HOLD + FADE, clock);
+      c.globalCompositeOperation = "destination-out"; c.fillStyle = "rgba(0,0,0,0.14)"; c.fillRect(0, 0, st.W, st.H); c.globalCompositeOperation = "source-over";
+      c.lineCap = "round"; c.lineWidth = 2.2 * dpr; c.globalAlpha = fade;
+      for (let i = 0; i < N; i++) {
+        const p = parts[i], z = ATOMS[D[i]].z, w = smooth(0.15, 0.85, 1 - Math.hypot(p.x - z[0], p.y - z[1]) / p.d0), col = tone(D[i], p.done ? 1 : w);
+        c.strokeStyle = col; c.fillStyle = col;
+        if (!p.done || p.px !== p.x) { c.beginPath(); c.moveTo(st.X(p.px), st.Y(p.py)); c.lineTo(st.X(p.x), st.Y(p.y)); c.stroke(); }
+        c.beginPath(); c.arc(st.X(p.x), st.Y(p.y), 1.8 * dpr, 0, TAU); c.fill();
+      }
+      c.globalAlpha = 1;
+    }
+    function step(dt) {
+      if (!FG.ready || !dests()) return;
+      clock += dt;
+      let alive = 0;
+      for (const p of parts) {
+        p.px = p.x; p.py = p.y; if (p.done) continue; alive++;
+        stepDir(p, FG.field, 0.55 * dt, CLK.auto.vmin, CLK.auto.vmax);
+        const a = arrivedAt(p.x, p.y); if (a >= 0) { p.done = true; p.x = ATOMS[a].z[0]; p.y = ATOMS[a].z[1]; }
+      }
+      if (tAll === null && (alive === 0 || clock > FLOW)) tAll = clock;
+      const a = tAll === null ? 0 : smooth(tAll, tAll + SHOW, clock) * (1 - smooth(tAll + SHOW + HOLD, tAll + SHOW + HOLD + FADE, clock));
+      if (Math.abs(a - shown) > 0.004 || (a === 0 && shown !== 0)) bg(a);
+      rd.innerHTML = tAll !== null && a > 0.5 && BAS.masses
+        ? `share of the noise in each basin ${chips(BAS.masses, v => v.toFixed(2))}, the data weights exactly`
+        : "the arrows never change: every point has one path and one destination";
+      fg(dt);
+      if (tAll !== null && clock > tAll + SHOW + HOLD + FADE) { reset(); bg(0); }
+    }
+    const L = loop(step);
+    function still() {   // reduced motion: the finished picture, basins shown
+      if (!FG.ready || !dests()) return;
+      const D = dests(); bg(1); const c = st.clear("fg");
+      for (let i = 0; i < N; i++) { const z = ATOMS[D[i]].z; st.dot(c, z[0], z[1], 2.1, ATOMS[D[i]].c); }
+      rd.innerHTML = BAS.masses ? `share of the noise in each basin ${chips(BAS.masses, v => v.toFixed(2))}` : "";
+    }
+    onScreen(st.el, L);
+    if (reduced) still(); else { bg(0); reset(); }
+    return { redraw() { layer = null; streams = null; if (reduced) still(); else bg(shown < 0 ? 0 : shown); }, ready() { streams = null; if (reduced) still(); else { bg(0); reset(); } } };
+  }
+
+  // ---------- I.4 the same noise: flow matching with 8 calls against the map with one ----------
+  function initRace() {
+    const root = document.getElementById("i-race"); if (!root) return;
+    const [A, B] = [...root.querySelectorAll(".anim-stage")].map(el => { const s = new Stage(el); stages.push(s); return s; });
+    const callsA = root.querySelector(".calls-fm"), callsB = root.querySelector(".calls-map");
+    const n = 8, P = X0.map(x => eulerPath(x, n)), PER = 0.5, RUN = n * PER, HOP0 = 0.3, HOP = 0.8, HOLD = 2.6, FADE = 0.6;
+    let clock = reduced ? RUN : 0, layer = null;
+    function bgA() { const c = A.clear("bg", CREAM); A.atoms(c, false); A.frame(c); }
+    function bgB() { const c = B.clear("bg", CREAM); if (BAS.done) { if (!layer) layer = basinLayer(B); c.drawImage(layer, 0, 0); } B.atoms(c, false); B.frame(c); }
+    function draw() {
+      const D = dests(), fade = 1 - smooth(RUN + HOLD, RUN + HOLD + FADE, clock);
+      const prog = Math.min(n, clock / PER), end = prog >= n, k = Math.min(n - 1, Math.floor(prog));
+      let c = A.clear("fg"); c.globalAlpha = fade;
+      for (let i = 0; i < N; i++) A.line(c, P[i].slice(0, k + 1).concat([posAt(P[i], prog)]), 0.7, rgba(CHARCOAL, 0.16));
+      for (let i = 0; i < N; i++) { const p = posAt(P[i], prog), a = end ? landed(p) : -1; A.dot(c, p[0], p[1], 2.1, a >= 0 ? ATOMS[a].c : GREY); }
+      c.globalAlpha = 1; callsA.textContent = end ? n : k + 1;
+      c = B.clear("fg"); if (!D) return; c.globalAlpha = fade;
+      const u = ease(clamp01((clock - HOP0) / HOP));
+      for (let i = 0; i < N; i++) {
+        const z = ATOMS[D[i]].z, x = X0[i][0] + (z[0] - X0[i][0]) * u, y = X0[i][1] + (z[1] - X0[i][1]) * u;
+        if (u > 0) B.line(c, [X0[i], [x, y]], 0.7, tone(D[i], 1, 0.22));
+        B.dot(c, x, y, 2.1, tone(D[i], u));
+      }
+      c.globalAlpha = 1; callsB.textContent = clock >= HOP0 ? 1 : 0;
+    }
+    const L = loop(dt => { clock += dt; if (clock > RUN + HOLD + FADE) clock = 0; draw(); });
+    onScreen(root.querySelector(".anim"), L); bgA(); bgB(); draw();
+    return { redraw() { layer = null; bgA(); bgB(); draw(); }, ready() { bgB(); draw(); } };
+  }
+
   // ================= 1. pairs and the interpolant =================
   function initPairs() {
     const root = document.getElementById("d-pairs"); if (!root) return;
@@ -150,8 +350,15 @@
   // ================= 2. the flow-matching field b_t =================
   function initField() {
     const root = document.getElementById("d-field"); if (!root) return;
-    const st = makeStage(root), slider = root.querySelector("input[type=range]"), tval = root.querySelector(".tval"), rd = read(root);
+    const st = makeStage(root), slider = root.querySelector("input[type=range]"), tval = root.querySelector(".tval"), rd = read(root), tag = root.querySelector(".math-tag");
     let t = parseFloat(slider.value), hover = null;
+    function placeTag(z, col) {   // the KaTeX label of the posterior mean, next to it and kept inside the stage
+      if (!tag) return;
+      tag.style.color = col; tag.hidden = false;
+      const W = st.el.clientWidth, H = st.el.clientHeight, w = tag.offsetWidth, h = tag.offsetHeight;
+      tag.style.left = Math.min(Math.max(st.X(z[0]) / st.dpr + 9, 4), W - w - 4) + "px";
+      tag.style.top = Math.min(Math.max(st.Y(z[1]) / st.dpr - h - 6, 4), H - h - 4) + "px";
+    }
     function bg() {
       const c = st.clear("bg", CREAM), dpr = st.dpr, n = 11, L = 0.3, s = Math.min(t, 0.97);
       c.lineWidth = 1.4 * dpr; c.lineCap = "round"; c.strokeStyle = "rgba(78,76,70,0.6)"; c.fillStyle = "rgba(78,76,70,0.75)";
@@ -164,10 +371,10 @@
       rd.innerHTML = t < 0.03 ? "t = 0: nothing is known yet, every arrow points at the data mean" : t < 0.6 ? `t = ${t.toFixed(2)}: the field has started to split between the atoms` : `t = ${t.toFixed(2)}: near the end each arrow has chosen its atom, and the speed grows like 1 / (1 &minus; t)`;
     }
     function fg() {
-      const c = st.clear("fg"); if (!hover) return;
+      const c = st.clear("fg"); if (!hover) { if (tag) tag.hidden = true; return; }
       const [x, y] = hover, z = zhat(x, y, Math.min(t, 0.97)), col = ATOMS[nearestAtom(z[0], z[1])].c;
       st.line(c, [[x, y], z], 1.2, rgba(CHARCOAL, 0.6), [3, 4]); st.dot(c, z[0], z[1], 4, "#ffffff", col); st.dot(c, x, y, 3.5, INK);
-      st.label(c, "x", x, y); st.label(c, "ẑ_t(x) = E[x₁ | I_t = x]", z[0], z[1], col);
+      st.label(c, "x", x, y); placeTag(z, col);
       const b = bFM(x, y, Math.min(t, 0.97)), m = Math.hypot(b[0], b[1]) || 1, L = Math.min(0.9, 0.25 * m);
       st.arrow(c, [x, y], [x + L * b[0] / m, y + L * b[1] / m], INK, 1.8, 7);
     }
@@ -270,6 +477,10 @@
     }
     function drawR(u) {
       const c = right.clear("fg");
+      if (!dests) {   // before the first run: the noise draws only
+        for (let i = 0; i < N; i++) right.dot(c, X0[i][0], X0[i][1], 2.1, GREY);
+        reads[1].innerHTML = "the same 300 noise draws"; return;
+      }
       for (let i = 0; i < N; i++) {
         const z = ATOMS[dests[i]].z, x = X0[i][0] + (z[0] - X0[i][0]) * u, y = X0[i][1] + (z[1] - X0[i][1]) * u;
         if (u > 0) right.line(c, [X0[i], [x, y]], 0.7, rgba(ATOMS[dests[i]].c, 0.25));
@@ -284,7 +495,7 @@
       const t0 = performance.now(), per = Math.max(140, Math.min(650, 2600 / n)), total = per * n, flyT = 700;
       if (reduced) { drawL(n); drawR(1); return; }
       function f(now) {
-        const el = now - t0, pL = Math.min(n, el / per), pR = ease(Math.min(1, el / flyT));
+        const el = Math.max(0, now - t0), pL = Math.min(n, el / per), pR = ease(Math.min(1, el / flyT));   // a frame's timestamp can precede t0
         drawL(pL); drawR(pR);
         if (el < Math.max(total, flyT)) anim = requestAnimationFrame(f); else { drawL(n); drawR(1); }
       }
@@ -298,15 +509,16 @@
 
   function init() {
     const loaded = loadFields(global.BTM_FIELDS);
-    const diagrams = [initPairs(), initField(), initAuto(), initMap(), initCompare()].filter(Boolean);
+    const safe = f => { try { return f(); } catch (e) { if (global.console) console.error(e); return null; } };   // one broken diagram must not stop the rest
+    const diagrams = [initFlowIntro, initSteps, initFixed, initRace, initPairs, initField, initAuto, initMap, initCompare].map(safe).filter(Boolean);
     if (!loaded) {   // no shipped grids: compute the field in chunks, then the basins
       let row = 0; const G = Toy.GRID;
       (function step() {
         if (row < G.n) { const r1 = Math.min(G.n, row + 6); Toy.computeAutoGrid([row, r1]); row = r1; setTimeout(step, 0); return; }
         for (const F of Toy.FIELDS) F.ready = true;
-        (function basins() { Toy.computeBasinRows(8, 0); if (!BAS.done) { setTimeout(basins, 0); return; } for (const d of diagrams) if (d.ready) d.ready(); })();
+        (function basins() { Toy.computeBasinRows(8, 0); if (!BAS.done) { setTimeout(basins, 0); return; } for (const d of diagrams) if (d.ready) safe(() => d.ready()); })();
       })();
-    } else for (const d of diagrams) if (d.ready) d.ready();
+    } else for (const d of diagrams) if (d.ready) safe(() => d.ready());
     let rt = null;
     global.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { for (const s of stages) s.resize(); for (const d of diagrams) d.redraw(); }, 120); });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { for (const d of diagrams) d.redraw(); });

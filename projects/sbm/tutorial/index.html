@@ -4,8 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Beckmann maps, from the ground up</title>
-  <meta name="description" content="A scrolling tutorial on one-step generation: from straight lines between noise and data, through flow matching and autonomous flows, to a Beckmann map that lands on the data in a single network call." />
-  <link rel="stylesheet" href="../css/style.css?v=7" />
+  <meta name="description" content="A scrolling tutorial on one-step generation in two parts: animations of flow matching, autonomous flows and the Beckmann map, then the equations behind each picture, from straight lines between noise and data to a map that lands on the data in a single network call." />
+  <link rel="stylesheet" href="../css/style.css?v=8" />
+  <link rel="stylesheet" href="../css/tutorial.css?v=2" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css" />
 </head>
 <body>
@@ -15,7 +16,11 @@
   <header class="titlebox">
     <p class="eyebrow">Tutorial</p>
     <h1>Beckmann maps, from the ground up</h1>
-    <p class="tagline tut">From straight lines between noise and data to a generator that lands on the data in a single network call. Five pictures you can poke, and the equations behind each.</p>
+    <p class="tagline tut">How a generator can turn noise into data in a single network call: first in pictures, then in equations.</p>
+    <nav class="parts" aria-label="The two parts of the tutorial">
+      <a class="part-card" href="#intuition"><span class="part-no">Part I</span><span class="part-name">The intuition</span><span class="part-desc">Watch flows carry noise onto data, and see why a map can skip the flow. Four animations, no equations.</span></a>
+      <a class="part-card" href="#math"><span class="part-no">Part II</span><span class="part-name">The math</span><span class="part-desc">The equations behind each picture, the loss that trains the map, and guidance. Diagrams to poke.</span></a>
+    </nav>
     <div class="links">
       <a href="../" class="btn btn-outline">&larr; Project page</a>
       <a href="https://colab.research.google.com/github/tullebulle/tullebulle.github.io/blob/main/projects/sbm/tutorial/beckmann_maps.ipynb" class="btn" target="_blank" rel="noopener">Notebook, open in Colab</a>
@@ -24,15 +29,84 @@
     <p class="links-note">Beckmann maps and autonomous flows were introduced in Beckmann Transport Models (Lee et al., 2026), work by one of our authors; <a href="../">Scalable Beckmann Maps</a> takes the map to ImageNet and text-to-image. This page is the pitch for the whole idea; guidance, what the new paper adds, comes last.</p>
   </header>
 
-  <section class="block reveal" id="goal">
-    <p class="eyebrow">0 &middot; The goal</p>
-    <h2>Learn the endpoint</h2>
-    <p class="prose">Flow and diffusion models make an image by integrating a differential equation: a network is called tens or hundreds of times, and each call moves the sample a little closer to the data. A Beckmann map is trained to output the <em>endpoint</em> of that journey directly, so a sample is one network call. This page builds the idea up on a toy in the plane where everything can be drawn. The toy has five data points with weights that sum to one; think of each as one image and of its weight as how often it appears. A perfect generator sends exactly that fraction of all noise onto that point, and nothing anywhere else.</p>
+  <section class="part-head reveal" id="intuition">
+    <p class="eyebrow">Part I</p>
+    <h2 class="part-title">The intuition</h2>
+    <p class="prose">A generative model turns random noise into data. Here the data are five points in the plane, stand-ins for five images, and the size of each dot says how often it appears. A good generator sends that share of the noise onto each point and nothing anywhere else. The four animations below show how flow matching gets there in many small steps, why it cannot get there in one, and how a Beckmann map does.</p>
     <p class="scroll-cue">Scroll to explore</p>
   </section>
 
+  <section class="block reveal story" id="i-flow">
+    <div class="story-text">
+      <p class="eyebrow">I.1 &middot; Flow matching</p>
+      <h2>Noise flows into data</h2>
+      <p class="prose">Flow matching trains a network to answer one question: at this place and at this moment, which way should a sample move? The grey arrows are its answers. To make a sample, start from a noise point and follow the arrows in small steps, one network call per step.</p>
+      <p class="prose">The arrows change as time runs. At first they all point to the middle, because nothing has been decided yet; later they turn toward the data points. The dark sample leaves a dot at every network call: it sets off toward the middle and bends toward its data point only once the field has made up its mind.</p>
+    </div>
+    <div class="story-fig anim">
+      <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas><div class="stage-tag">the arrows at time <i>t</i> = <span class="tnow">0.00</span></div></div>
+      <div class="pills"><span class="pill">flow matching &middot; network call <span class="calls">1</span> of <span class="ncalls">20</span></span></div>
+    </div>
+  </section>
+
+  <section class="block reveal story" id="i-steps">
+    <div class="story-text">
+      <p class="eyebrow">I.2 &middot; Fewer steps</p>
+      <h2>One big step lands on the average</h2>
+      <p class="prose">Every call costs time, so why not take one big step? Because the first arrows all point to the middle. A single step follows them and puts every sample on the average of the data, the two-dimensional version of the blurry &ldquo;average image&rdquo;. With two steps the samples stop between data points. Grey dots have not reached a data point; coloured ones have.</p>
+      <p class="prose">This toy is easy, and about eight steps bring the samples onto the data; flow-matching image models take tens to hundreds. The animation cycles through the step counts; pick one to hold it.</p>
+    </div>
+    <div class="story-fig anim">
+      <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+      <div class="story-controls"><span class="lbl">steps</span><div class="seg"><button type="button" data-n="1" class="on">1</button><button type="button" data-n="2">2</button><button type="button" data-n="4">4</button><button type="button" data-n="8">8</button></div></div>
+      <div class="anim-read"></div>
+    </div>
+  </section>
+
+  <section class="block reveal story" id="i-fixed">
+    <div class="story-text">
+      <p class="eyebrow">I.3 &middot; Autonomous flows</p>
+      <h2>A field that never changes</h2>
+      <p class="prose">Beckmann Transport Models learn a different field, one that does not depend on time. Its arrows never change, so its flow lines stay put and never cross: from every starting point there is exactly one path and one destination.</p>
+      <p class="prose">The plane therefore splits into basins, one per data point, and every noise point in a basin ends on that basin&rsquo;s data point. The field is built so that each basin holds exactly the right share of the noise: the larger the dot, the more noise its basin collects.</p>
+    </div>
+    <div class="story-fig anim">
+      <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas><div class="stage-tag">one field for all times</div></div>
+      <div class="anim-read"></div>
+    </div>
+  </section>
+
+  <section class="block reveal" id="i-race">
+    <p class="eyebrow">I.4 &middot; The Beckmann map</p>
+    <h2>Skip the flow, jump to the end</h2>
+    <p class="prose">If every starting point has a single destination, there is no need to follow the flow at all. A Beckmann map is a network that outputs the destination directly: noise in, data point out, one call. It is trained from data alone, without ever running the flow; Part II shows how. Below, the same noise twice: flow matching with eight steps on the left, the map on the right.</p>
+    <div class="anim">
+      <div class="anim-panels">
+        <div class="anim-panel">
+          <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+          <div class="pills"><span class="pill">flow matching &middot; <span class="calls-fm">0</span> <span class="nw">network </span>calls</span></div>
+        </div>
+        <div class="anim-panel">
+          <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+          <div class="pills"><span class="pill dark">Beckmann map &middot; <span class="calls-map">0</span> <span class="nw">network </span>call</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="cap">Both panels use the exact fields of the toy, and the coloured regions on the right are the map&rsquo;s basins. The <a href="https://colab.research.google.com/github/tullebulle/tullebulle.github.io/blob/main/projects/sbm/tutorial/beckmann_maps.ipynb" target="_blank" rel="noopener">notebook</a> trains a real map on a CPU and checks that its basins match these.</p>
+    <div class="next-part">
+      <p class="prose">That is the whole idea. Part II puts equations on each picture: the current that the flow lines follow, why each basin receives exactly the right share of the noise, and the loss that trains the map without the flow.</p>
+      <div class="links"><a href="#math" class="btn">Part II: the math &darr;</a></div>
+    </div>
+  </section>
+
+  <section class="part-head reveal" id="math">
+    <p class="eyebrow">Part II</p>
+    <h2 class="part-title">The math</h2>
+    <p class="prose">Flow and diffusion models make an image by integrating a differential equation: a network is called tens or hundreds of times, and each call moves the sample a little closer to the data. A Beckmann map is trained to output the <em>endpoint</em> of that journey directly, so a sample is one network call. This part builds the idea up again, with equations, on the toy of Part I, where everything can be drawn. The toy has five data points with weights that sum to one; think of each as one image and of its weight as how often it appears. A perfect generator sends exactly that fraction of all noise onto that point, and nothing anywhere else.</p>
+  </section>
+
   <section class="block reveal" id="pairs">
-    <p class="eyebrow">1 &middot; Noise to data</p>
+    <p class="eyebrow">II.1 &middot; Noise to data</p>
     <h2>Straight lines between noise and data</h2>
     <p class="prose">Noise is cheap: a draw \(x_0 \sim \mu_0 = \mathcal N(0, I)\). Data \(x_1 \sim \mu_1\) is what we have examples of. A generator is a map \(T\) that turns one into the other,</p>
     <div class="eqn">$$T_\#\mu_0 = \mu_1,$$</div>
@@ -63,7 +137,7 @@
   </section>
 
   <section class="block reveal" id="fm">
-    <p class="eyebrow">2 &middot; Flow matching</p>
+    <p class="eyebrow">II.2 &middot; Flow matching</p>
     <h2>A velocity that changes with time</h2>
     <p class="prose">Flow matching learns the average slope of the lines passing through each point at each time,</p>
     <div class="eqn">$$b_t(x) = \mathbb E\big[\dot I_t \mid I_t = x\big] = \arg\min_{\hat b}\ \int_0^1 \mathbb E\,\big\|\hat b(I_t, t) - \dot I_t\big\|^2\,dt,$$</div>
@@ -74,7 +148,7 @@
       <div class="anim-panels">
         <div class="anim-panel">
           <div class="anim-title">The field \(b_t(x)\), directions only</div>
-          <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas></div>
+          <div class="anim-stage square"><canvas class="bg"></canvas><canvas class="fg"></canvas><div class="math-tag" hidden>\(\hat z_t(x) = \mathbb E[x_1 \mid I_t = x]\)</div></div>
           <div class="anim-read"></div>
         </div>
         <div class="anim-panel">
@@ -82,18 +156,18 @@
             <label>flow time <i>t</i> = <span class="tval">0.00</span></label>
             <input type="range" min="0" max="0.97" step="0.01" value="0" />
             <div class="anim-legend" style="margin-left:0">
-              <span>hover: the arrow at <i>x</i> and the posterior mean <i>&#7825;<sub>t</sub></i>(<i>x</i>) it points at</span>
-              <span>at <i>t</i> = 0 the posterior is the prior, so <i>&#7825;</i><sub>0</sub> is the data mean for every <i>x</i></span>
+              <span>hover: the arrow at \(x\) and the posterior mean \(\hat z_t(x)\) it points at</span>
+              <span>at \(t = 0\) the posterior is the prior, so \(\hat z_0\) is the data mean for every \(x\)</span>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <p class="prose">That last fact is the whole problem with few steps. One Euler step from \(t = 0\) is \(x_0 + b_0(x_0) = \hat z_0\), the data mean, for every \(x_0\): every sample lands on the same point, the famous blurry &ldquo;average image&rdquo;. Flow matching needs many steps because its field keeps changing as \(t\) runs, and the early steps commit to nothing. Section 5 shows this side by side with the map.</p>
+    <p class="prose">That last fact is the whole problem with few steps. One Euler step from \(t = 0\) is \(x_0 + b_0(x_0) = \hat z_0\), the data mean, for every \(x_0\): every sample lands on the same point, the famous blurry &ldquo;average image&rdquo;. Flow matching needs many steps because its field keeps changing as \(t\) runs, and the early steps commit to nothing. Section II.5 shows this side by side with the map.</p>
   </section>
 
   <section class="block reveal" id="auto">
-    <p class="eyebrow">3 &middot; Autonomous flows</p>
+    <p class="eyebrow">II.3 &middot; Autonomous flows</p>
     <h2>The Beckmann current</h2>
     <p class="prose">Beckmann Transport Models replace the time-dependent velocity by one field that does not depend on time. Average the flow-matching velocity over time, weighted by how much of the population is at \(x\) at each time:</p>
     <div class="eqn">$$J(x) = \int_0^1 \rho_t(x)\,b_t(x)\,dt, \qquad \nu(x) = \int_0^1 \rho_t(x)\,dt, \qquad b(x) = \frac{J(x)}{\nu(x)}.$$</div>
@@ -128,7 +202,7 @@
   </section>
 
   <section class="block reveal" id="map">
-    <p class="eyebrow">4 &middot; The Beckmann map</p>
+    <p class="eyebrow">II.4 &middot; The Beckmann map</p>
     <h2>Learn the endpoint, never integrate</h2>
     <p class="prose">Define \(T(x)\) as the data point at the end of the flow line through \(x\). By construction \(T\) is constant along flow lines, and it fixes the data:</p>
     <div class="eqn">$$J(x)\cdot\nabla T(x) = 0 \quad\text{off the data}, \qquad T(x) = x \quad\text{on the data}.$$</div>
@@ -167,7 +241,7 @@ sample:  x = T(x0)                                 # one network call</pre>
   </section>
 
   <section class="block reveal" id="compare">
-    <p class="eyebrow">5 &middot; One call versus many</p>
+    <p class="eyebrow">II.5 &middot; One call versus many</p>
     <h2>The same noise, two generators</h2>
     <p class="prose">Left: flow matching, Euler&rsquo;s method with \(N\) equal steps from the same 300 noise draws, each step one network call. Right: the Beckmann map, one call. Pick \(N\) and press generate. With one step, flow matching puts every sample on the data mean; with a few, between data points; the map lands on them.</p>
     <div class="anim" id="d-compare">
@@ -194,7 +268,7 @@ sample:  x = T(x0)                                 # one network call</pre>
   </section>
 
   <section class="block reveal" id="guidance">
-    <p class="eyebrow">6 &middot; Going further: what SBM adds</p>
+    <p class="eyebrow">II.6 &middot; Going further: what SBM adds</p>
     <h2>Guidance, built into training</h2>
     <p class="prose">Real models are conditional: the map takes a class label or a text prompt \(c\), and through condition dropout the same network also learns a null branch \(T_\emptyset\) that ignores it. Multistep models owe much of their quality to classifier-free guidance, which pushes a sample away from the null prediction and toward the conditional one with a strength \(\omega \ge 1\). A map has no velocity or score to guide, only endpoint predictions. The observation behind Scalable Beckmann Maps is that the current is a denoising field,</p>
     <div class="eqn">$$J_c(x) = h_c(x)\,\big(\bar z_c(x) - x\big), \qquad h_c > 0,$$</div>
@@ -238,7 +312,7 @@ sample:  x = T(x0)                                 # one network call</pre>
   </section>
 
   <section class="block reveal" id="next">
-    <p class="eyebrow">7 &middot; Keep going</p>
+    <p class="eyebrow">II.7 &middot; Keep going</p>
     <h2>From the toy to ImageNet</h2>
     <p class="prose">The recipe that trains maps with hundreds of millions of parameters keeps exactly the two losses above and adds engineering around the stop-gradient: a frozen copy of the network for the stopped targets, a per-row normalization of the transport term, an adaptive balance between the transport and boundary gradients, a mixture of interpolation times, and a boundary level that lets the boundary term see slightly noisy data. With those, a Beckmann map trained from scratch in the latent space of a representation autoencoder reaches a one-step FID of 1.6 on ImageNet 256, a GenEval score of 0.86 in text-to-image generation, and beats DriftWorld on two robot world-modelling benchmarks, with one network evaluation per sample and no teacher.</p>
     <div class="resources">
@@ -256,7 +330,7 @@ sample:  x = T(x0)                                 # one network call</pre>
 <script src="../assets/btm_anim.js"></script>
 <script src="../assets/fig1_fields.js"></script>
 <script src="../assets/fig1_anim.js"></script>
-<script src="../assets/tutorial.js?v=1"></script>
+<script src="../assets/tutorial.js?v=3"></script>
 <script src="../assets/page.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}], throwOnError: false})"></script>

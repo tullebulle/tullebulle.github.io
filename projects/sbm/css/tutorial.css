@@ -1,0 +1,50 @@
+/* Tutorial page only (projects/sbm/tutorial/), on top of style.css: the two parts (intuition, math), the
+   text-beside-animation rows of Part I, pills under the stages, and HTML labels laid over the canvases. */
+
+/* the two part cards in the title box */
+.parts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 720px; margin: 1.1rem auto 0; text-align: left; }
+.part-card { display: block; background: #fff; border: 1px solid var(--box-frame); border-radius: 9px; padding: 11px 16px 12px; color: var(--text); }
+.part-card:hover { text-decoration: none; border-color: var(--juniper); box-shadow: 0 2px 0 var(--juniper-30); }
+.part-card:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+.part-card .part-no { display: block; font-family: var(--sf); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--juniper); }
+.part-card .part-name { display: block; font-weight: 700; color: var(--slate); font-size: 1.22rem; margin: 1px 0 3px; }
+.part-card .part-desc { display: block; font-size: 0.92rem; line-height: 1.4; font-style: italic; color: var(--muted); }
+
+/* a part opens with a heavier rule and a larger title */
+.part-head { margin-top: 4.8rem; padding-top: 1.3rem; border-top: 2px solid var(--slate); scroll-margin-top: 12px; }
+.part-head .eyebrow { font-size: 0.84rem; }
+.part-head .part-title { font-family: var(--rm-display); font-size: 2.35rem; margin: 0.05rem 0 0.7rem; }
+
+/* Part I: text beside a square animation */
+.story { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); gap: 0 40px; align-items: center; }
+.story .story-fig { min-width: 0; margin: 0; }
+.story .prose:last-child { margin-bottom: 0; }
+@media (max-width: 820px) { .story { grid-template-columns: minmax(0, 1fr); } .story .story-fig { margin-top: 0.6rem; } }
+
+.pills { text-align: center; margin-top: 9px; min-height: 1.6em; }
+.pill { display: inline-block; font-family: var(--sf); font-size: 0.8rem; line-height: 1.35; padding: 3px 13px; border-radius: 999px; border: 1px solid var(--box-frame); background: #fff; color: var(--slate); font-variant-numeric: tabular-nums; }
+.pill.dark { background: var(--slate); border-color: var(--slate); color: #fff; }
+.story-controls { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 12px; margin-top: 10px; font-size: 0.92rem; }
+.story-controls .lbl { font-style: italic; }
+
+/* labels laid over a canvas: a corner tag, and a math label that follows the pointer */
+.stage-tag { position: absolute; left: 9px; top: 9px; padding: 2px 9px; font-size: 0.86rem; font-style: italic; color: var(--slate); background: rgba(255, 255, 255, 0.88); border: 1px solid var(--line); border-radius: 4px; pointer-events: none; font-variant-numeric: tabular-nums; }
+.math-tag { position: absolute; left: 0; top: 0; padding: 1px 5px; font-size: 0.95rem; white-space: nowrap; background: rgba(251, 246, 233, 0.92); border-radius: 3px; pointer-events: none; }
+.math-tag[hidden] { display: none; }
+
+.next-part { margin-top: 1.2rem; }
+.next-part .links { justify-content: flex-start; margin-top: 0.4rem; }
+
+/* Legends on this page are sentences with inline math. The shared rules `.anim-legend span { display: inline-flex }` and
+   `{ white-space: normal }` (meant for swatch + label pairs) also reach KaTeX's inner spans: inline-flex misplaces sub- and
+   superscripts, and wrapping inside KaTeX's min-content boxes stacks the symbols on top of each other. Here each legend item
+   is a block, the spans inside it are inline, and KaTeX's boxes keep their own no-wrap. */
+.anim-legend span { display: inline; gap: 0; }
+.anim-legend > span { display: block; }
+.anim-legend .katex span:not(.base) { white-space: inherit; }
+.anim-legend > span > .sw, .anim-legend > span > .ln { margin-right: 6px; vertical-align: -1px; }
+@media (max-width: 560px) { .parts { grid-template-columns: minmax(0, 1fr); } .part-head .part-title { font-size: 1.9rem; } }
+/* the race stays side by side on phones: the comparison is the point */
+#i-race .anim-panels { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+@media (max-width: 560px) { #i-race .pill { font-size: 0.7rem; padding: 2px 8px; } }
+@media (max-width: 560px) { #i-race .pill .nw { display: none; } }
