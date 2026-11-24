@@ -295,7 +295,8 @@
         if (this.pulse >= 0) { this.pulse += dt / 0.8; if (this.pulse > 1) this.pulse = -1; }
       }
       const past = this.phase === "post" || this.phase === "end" || this.phase === "fade";
-      const ease = (v, target, tc) => v + (target - v) * (1 - Math.exp(-dt / tc));
+      let moved = 0;
+      const ease = (v, target, tc) => { const n = v + (target - v) * (1 - Math.exp(-dt / tc)); moved = Math.max(moved, Math.abs(n - v)); return n; };
       this.fan = ease(this.fan, 1, 0.25);
       this.glow = ease(this.glow, live && (past || (this.phase === "hold" && this.tau > 0.25)) ? 1 : 0, 0.16);
       this.steer = ease(this.steer, live && (past || (this.phase === "hold" && this.tau > 1.35)) ? 1 : 0, 0.16);
@@ -314,7 +315,9 @@
         e.rho += ((s.k === this.target ? 1 : 0) - e.rho) * k;
       }
       this.snapEnds = false;
+      this.moved = moved;
     }
+    settled() { return !this.playing && this.pulse < 0 && (this.moved || 0) < 2e-4; }
 
     // ----- layout -----
     resize() {
@@ -708,7 +711,7 @@
       const dt = last === null ? 0 : Math.min((now - last) / 1000, 0.05); last = now;
       anim.tick(dt); anim.draw();
       acc += dt; if (acc > 0.12 || dt === 0) { anim.readout(); acc = 0; }
-      if (visible && !document.hidden) raf = requestAnimationFrame(frame);
+      if (visible && !document.hidden && !anim.settled()) raf = requestAnimationFrame(frame);
     }
     function wake() { if (!raf && visible && !document.hidden) { last = null; raf = requestAnimationFrame(frame); } }
     function setPlaying(p) { anim.playing = p; playBtn.textContent = p ? "Pause" : "Play"; wake(); }

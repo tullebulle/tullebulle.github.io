@@ -14,7 +14,7 @@
   <meta property="og:url" content="https://tullebulle.github.io/projects/multimfm/" />
   <meta property="og:image" content="https://tullebulle.github.io/images/multimfm.png" />
   <link rel="stylesheet" href="../sbm/css/style.css?v=7" />
-  <link rel="stylesheet" href="css/style.css?v=3" />
+  <link rel="stylesheet" href="css/style.css?v=5" />
   <link rel="preload" as="font" type="font/woff" href="../sbm/assets/fonts/lmroman10-regular.woff" crossorigin />
 </head>
 <body>
@@ -120,10 +120,54 @@
         <b>Steering:</b> at <i>t</i> = 0.28 the reward <i>r</i>(<i>x</i><sub>1</sub>) = &lambda; for look-aheads ending on the chosen category is switched on. Those look-aheads turn rose, and the gold arrows show the paper&rsquo;s gradient-free estimate of the value gradient: the reward-weighted mean of the look-aheads minus their plain mean. The red path adds that correction to the base velocity; the dashed path is the same noise without it. Because position and category are coupled, rewarding a category bends the continuous path as well.
         At &lambda; = 0 the two paths coincide, and a draw with no look-ahead on the rewarded mode cannot be steered. Each loop ends on a still composed like the paper&rsquo;s figure. In the QM9 and DNA experiments the look-aheads come from the learned map, 32 per step.</p>
     </details>
-    <figure class="fig medium toy">
-      <a href="assets/particles.png"><img src="assets/particles.png" width="1460" height="475" alt="Four panels of coloured particles: Gaussian noise, an unguided square of mixed colours, the same square recoloured as a Norwegian flag, and a smiley face" loading="lazy" decoding="async" /></a>
-      <figcaption class="cap"><b>Two rewards, one generator.</b> Each particle has a continuous position and a discrete colour. The flag reward steers colour alone and keeps the square. The smiley reward steers position and colour together.</figcaption>
-    </figure>
+    <div class="anim toy" id="flag-anim">
+      <div class="flag-heads" aria-hidden="true">
+        <div class="anim-title">Base generator <i>p</i><sub>1</sub>(<i>x</i>)</div>
+        <div class="anim-title">Steered <i>p</i><sub>1</sub>(<i>x</i>)&thinsp;e<sup><i>r</i>(<i>x</i>)</sup></div>
+      </div>
+      <div class="anim-stage flag" role="img" aria-label="Two panels of coloured particles flowing from Gaussian noise to a square, side by side. The left panel is the base generator and keeps random colours. The right panel is steered by a reward: with the Norway reward the square keeps its shape and the colours resolve into a Norwegian flag; with the smiley reward the particles also move, gathering into two eyes and a mouth.">
+        <canvas class="bg"></canvas><canvas class="fg"></canvas>
+        <div class="flag-cap top" aria-hidden="true">Base generator</div>
+        <div class="flag-cap bottom" aria-hidden="true">Steered by the reward</div>
+      </div>
+      <div class="anim-read" aria-live="off"></div>
+      <div class="anim-controls">
+        <button type="button" id="flag-play" class="btn btn-outline">Pause</button>
+        <button type="button" id="flag-new" class="btn btn-outline">New noise</button>
+        <span class="steer-pick"><span class="lab">reward</span>
+          <span class="seg" id="flag-mode" role="group" aria-label="Reward">
+            <button type="button" data-m="norway" class="on" aria-pressed="true">Norway</button>
+            <button type="button" data-m="smiley" aria-pressed="false">smiley</button>
+            <button type="button" data-m="none" aria-pressed="false">none</button>
+          </span>
+        </span>
+        <label for="flag-lam">reward strength &lambda; = <span id="flag-lam-val">6</span></label>
+        <input type="range" id="flag-lam" min="0" max="14" step="1" value="6" />
+      </div>
+      <noscript><img src="assets/particles.png" width="1460" height="475" alt="Four panels of coloured particles: Gaussian noise, an unguided square of mixed colours, the same square recoloured as a Norwegian flag, and a smiley face" /></noscript>
+      <p class="cap"><b>Two rewards, one generator.</b> Each particle has a continuous position in the square and a discrete colour drawn jointly from one multiMFM. The Norway reward steers colour alone, so the square survives; the smiley reward steers position and colour together. Both panels start from the same noise.</p>
+    </div>
+    <details class="more">
+      <summary>What this toy is doing</summary>
+      <p class="cap">The toy of Figure 1 in the paper, run live rather than replayed. The state is
+        <i>x</i> = (<i>y</i>, <i>c</i>) with a position <i>y</i> in the square and a colour <i>c</i> over
+        {blue, white, red}. The base distribution is uniform in both, so the posterior
+        <i>p</i><sub>1|<i>t</i></sub>(&middot;&thinsp;|&thinsp;<i>x<sub>t</sub></i>) is known exactly: the position
+        endpoint is a truncated Gaussian on [&minus;1,&nbsp;1] per coordinate, and the colour endpoint is
+        categorical with probability proportional to exp(<i>t</i>&thinsp;<i>c<sub>t</sub></i>[<i>k</i>]&thinsp;/&thinsp;(1&minus;<i>t</i>)<sup>2</sup>).
+        Look-aheads are exact draws from that posterior, and the correction is the same gradient-free
+        estimator as the figure above: the reward-weighted mean of the look-aheads minus their plain mean.</p>
+      <p class="cap"><b>Two things are tuned, as they are in the paper.</b> The ideal coefficient is replaced
+        by a constant guidance strength with a cap on how far one step may move a particle, and guidance acts
+        only inside a window in <i>t</i>. The colour coordinate also starts from a wider Gaussian than the
+        position does. Without that, the colour posterior collapses by <i>t</i> &asymp; 0.85, before the
+        position posterior reveals where a particle will land, so every look-ahead agrees and the reward has
+        nothing left to steer with.</p>
+      <p class="cap">Steering is not exact, and it is not meant to look exact: sampling stays stochastic, so
+        some particles end on the wrong colour or away from a feature. The readout gives the mean reward in
+        both panels, which is the honest summary &mdash; for the flag it rises from about 0.33, the value a
+        random colour earns, to about 0.8.</p>
+    </details>
   </section>
 
   <section class="block reveal" id="method">
@@ -270,6 +314,7 @@ return x_T</pre>
 
 </main>
 <script src="assets/steer_anim.js?v=3"></script>
+<script src="assets/toy_anim.js?v=2"></script>
 <script src="../sbm/assets/page.js"></script>
 </body>
 </html>

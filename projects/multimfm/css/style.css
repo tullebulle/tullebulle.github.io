@@ -53,3 +53,26 @@ details.more .table-wrap + .cap.above, details.more .table-wrap + .two-tables, d
 /* long tables scroll inside their own box on narrow screens */
 table.results sub { font-size: 0.75em; }
 pre.bib { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* the coloured-particle toy: two square panels side by side, stacked on a phone */
+.anim.toy { margin-top: 2rem; }
+.anim-stage.flag { aspect-ratio: 2.15 / 1; }
+.flag-heads { display: grid; grid-template-columns: 1fr 1fr; }
+.flag-heads .anim-title { font-size: 0.95rem; line-height: 1.3; }
+#flag-anim .anim-read { font-size: 0.92rem; margin-top: 7px; }
+#flag-anim input[type="range"] { accent-color: var(--steer); width: 150px; }
+#flag-anim .seg button { font-size: 0.92rem; padding: 2px 12px 3px; border-radius: 999px; }
+#flag-anim .seg button.on { background: var(--steer); border-color: var(--steer); }
+#flag-anim .seg button:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+#flag-anim .cap { margin-top: 1rem; }
+#flag-anim noscript img { width: 100%; margin-top: 10px; }
+.flag-cap { display: none; position: absolute; left: 10px; font-weight: 700; color: var(--slate); font-size: 0.9rem; line-height: 1.2; pointer-events: none; }
+.flag-cap.top { top: 6px; }
+.flag-cap.bottom { top: calc(50% + 4px); }
+@media (max-width: 640px) {
+    .anim-stage.flag { aspect-ratio: 1 / 1.95; }
+    .flag-heads { display: none; }
+    .flag-cap { display: block; }
+    #flag-anim input[type="range"] { width: 130px; }
+    #flag-anim .anim-read { min-height: 2.9em; }
+}
