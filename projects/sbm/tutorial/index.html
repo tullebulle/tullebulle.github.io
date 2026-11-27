@@ -26,7 +26,7 @@
       <a href="https://colab.research.google.com/github/tullebulle/tullebulle.github.io/blob/main/projects/sbm/tutorial/beckmann_maps.ipynb" class="btn" target="_blank" rel="noopener">Notebook, open in Colab</a>
       <a href="https://github.com/tullebulle/tullebulle.github.io/blob/main/projects/sbm/tutorial/beckmann_maps.ipynb" class="btn btn-outline" target="_blank" rel="noopener">Notebook on GitHub</a>
     </div>
-    <p class="links-note">Beckmann maps and autonomous flows were introduced in Beckmann Transport Models (Lee et al., 2026), work by one of our authors; <a href="../">Scalable Beckmann Maps</a> takes the map to ImageNet and text-to-image. This page is the pitch for the whole idea; guidance, what the new paper adds, comes last.</p>
+    <p class="links-note">Beckmann maps and autonomous flows were introduced in <a href="https://arxiv.org/abs/2608.01692" target="_blank" rel="noopener">Beckmann Transport Models</a> (Lee et al., 2026), work by one of our authors; <a href="../">Scalable Beckmann Maps</a> takes the map to ImageNet and text-to-image. This page is the pitch for the whole idea; guidance, what the new paper adds, comes last.</p>
   </header>
 
   <section class="part-head reveal" id="intuition">
@@ -173,7 +173,7 @@
     <div class="eqn">$$J(x) = \int_0^1 \rho_t(x)\,b_t(x)\,dt, \qquad \nu(x) = \int_0^1 \rho_t(x)\,dt, \qquad b(x) = \frac{J(x)}{\nu(x)}.$$</div>
     <p class="prose">\(J\) is the <em>current</em>, the net flux of interpolants through \(x\); \(\nu\) is the <em>occupation measure</em>, \(\nu(x)\,dx\) being the expected time an interpolant spends in \(dx\); their ratio \(b\) is the average velocity of whatever passes through \(x\), whenever it passes. And \(b\) is the same regression as before with the time input removed:</p>
     <div class="eqn">$$b = \arg\min_{\hat b}\ \mathbb E_{t,\,x_0,\,x_1}\big\|\hat b(I_t) - \dot I_t\big\|^2.$$</div>
-    <p class="prose">Integrating the continuity equation \(\partial_t\rho_t + \nabla\cdot(\rho_t b_t) = 0\) over \(t\) kills the time derivative except at the two ends, \(\rho_1 - \rho_0 = \mu_1 - \mu_0\), and leaves the flux constraint of Beckmann&rsquo;s 1952 transportation problem:</p>
+    <p class="prose">Integrating the continuity equation \(\partial_t\rho_t + \nabla\cdot(\rho_t b_t) = 0\) over \(t\) kills the time derivative except at the two ends, \(\rho_1 - \rho_0 = \mu_1 - \mu_0\), and leaves the flux constraint of <a href="https://doi.org/10.2307/1907646" target="_blank" rel="noopener">Beckmann&rsquo;s 1952 transportation problem</a>:</p>
     <div class="eqn">$$\nabla\cdot J = \mu_0 - \mu_1 .$$</div>
     <p class="prose">Noise is a source of current, data a sink. Now the part that matters. The ODE \(\dot X = b(X)\) is <em>autonomous</em>: through each point passes exactly one flow line, and flow lines never cross or bend back as \(t\) runs, because there is no \(t\). Almost every noise point has a single destination, and the plane splits into <em>basins</em> \(B_j\), one per data point; the exceptions, the flow lines that run into a saddle point between two basins, cover no area. The flux constraint fixes the basins&rsquo; size: a basin&rsquo;s boundary is made of flow lines, so \(J\) is tangent to it and no current crosses it, the integral of \(\nabla\cdot J\) over the basin vanishes, and</p>
     <div class="eqn">$$\mu_0(B_j) = \mu_1(B_j) = p_j .$$</div>
